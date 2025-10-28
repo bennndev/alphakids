@@ -1,5 +1,7 @@
 package com.example.alphakids.ui.screens.tutor.games
-
+import androidx.compose.ui.platform.LocalContext
+import com.example.alphakids.ui.screens.tutor.games.WordHistoryStorage
+import com.example.alphakids.ui.screens.tutor.games.CompletedWord
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -133,18 +135,33 @@ fun AssignedWordsScreen(
             }
             
             else -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(uiState.assignedWords) { assignment ->
-                        AssignedWordCard(
-                            assignment = assignment,
-                            onClick = { onWordClick(assignment) }
-                        )
-                    }
+                val uiState by viewModel.uiState.collectAsState()
+                val context = LocalContext.current
+            
+            // Palabras completadas normalizadas a UPPERCASE para comparación
+            var completedSet by remember { mutableStateOf<Set<String>>(emptySet()) }
+            LaunchedEffect(Unit) {
+                completedSet = WordHistoryStorage
+                    .getCompletedWords(context)
+                    .map { it.word.trim().uppercase() }
+                    .toSet()
+            }
+                val pendingAssignments = uiState.assignedWords.filter { assignment ->
+                    val word = (assignment.palabraTexto ?: "").trim().uppercase()
+                    word !in completedSet
                 }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(pendingAssignments) { assignment ->
+                    AssignedWordCard(
+                        assignment = assignment,
+                        onClick = { onWordClick(assignment) }
+                    )
+                }
+            }
             }
         }
     }
@@ -188,15 +205,15 @@ fun AssignedWordCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = assignment.palabraTexto ?: "Palabra",
+                    text = "", // no mostrar la palabra (en blanco)
                     fontFamily = dmSansFamily,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                
+            
                 Spacer(modifier = Modifier.height(4.dp))
-                
+            
                 Text(
                     text = "Dificultad: ${assignment.palabraDificultad ?: "Normal"}",
                     fontFamily = dmSansFamily,
