@@ -25,7 +25,7 @@ object Routes {
     const val HOME = "$HOME_BASE/{studentId}"
     fun homeRoute(studentId: String) = "$HOME_BASE/$studentId"
 
-    // Rutas de la barra inferior (BottomNav) - NUEVAS
+    // Rutas de la barra inferior (BottomNav)
     const val STORE = "store/{studentId}"
     fun storeRoute(studentId: String) = "store/$studentId"
 
@@ -93,4 +93,11 @@ object Routes {
     const val STUDENT_PROFILE_EDIT_BASE = "student_profile_edit"
     const val STUDENT_PROFILE_EDIT = "$STUDENT_PROFILE_EDIT_BASE/{studentId}"
     fun editStudentProfileRoute(studentId: String) = "$STUDENT_PROFILE_EDIT_BASE/$studentId"
+
+    // Subrutas de Tienda
+    const val STORE_PETS = "store/pets/{studentId}"
+    fun storePetsRoute(studentId: String) = "store/pets/$studentId"
+
+    const val STORE_ACCESSORIES = "store/accessories/{studentId}"
+    fun storeAccessoriesRoute(studentId: String) = "store/accessories/$studentId"
 }

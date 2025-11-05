@@ -44,6 +44,8 @@ import com.example.alphakids.ui.screens.tutor.games.GameWordsScreen
 import com.example.alphakids.ui.screens.tutor.games.AssignedWordsScreen
 import com.example.alphakids.ui.screens.tutor.games.WordPuzzleScreen
 import com.example.alphakids.ui.screens.tutor.pets.StudentPetsScreen
+import com.example.alphakids.ui.screens.tutor.store.StudentAccessoriesStoreScreen
+import com.example.alphakids.ui.screens.tutor.store.StudentPetsStoreScreen
 import com.example.alphakids.ui.screens.tutor.store.StudentStoreScreen
 
 @Composable
@@ -555,6 +557,52 @@ fun AppNavHost(
             StudentStoreScreen(
                 onLogoutClick = onLogout,
                 onBackClick = { navController.popBackStack() },
+                onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
+                onBottomNavClick = { route ->
+                    val targetRoute = when (route) {
+                        "home" -> Routes.homeRoute(studentId)
+                        "pets" -> Routes.petsRoute(studentId)
+                        else -> Routes.storeRoute(studentId)
+                    }
+                    navigateToStudentBottomNav(targetRoute)
+                },
+                currentRoute = "store",
+                onPetsStoreClick = { navController.navigate(Routes.storePetsRoute(studentId)) },
+                onAccessoriesStoreClick = { navController.navigate(Routes.storeAccessoriesRoute(studentId)) }
+            )
+        }
+
+        // Subrutas de Tienda: Mascotas
+        composable(
+            route = Routes.STORE_PETS,
+            arguments = listOf(navArgument("studentId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val studentId = backStackEntry.arguments?.getString("studentId") ?: "default"
+            StudentPetsStoreScreen(
+                onBackClick = { navController.popBackStack() },
+                onLogoutClick = onLogout,
+                onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
+                onBottomNavClick = { route ->
+                    val targetRoute = when (route) {
+                        "home" -> Routes.homeRoute(studentId)
+                        "pets" -> Routes.petsRoute(studentId)
+                        else -> Routes.storeRoute(studentId)
+                    }
+                    navigateToStudentBottomNav(targetRoute)
+                },
+                currentRoute = "store"
+            )
+        }
+
+        // Subrutas de Tienda: Accesorios
+        composable(
+            route = Routes.STORE_ACCESSORIES,
+            arguments = listOf(navArgument("studentId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val studentId = backStackEntry.arguments?.getString("studentId") ?: "default"
+            StudentAccessoriesStoreScreen(
+                onBackClick = { navController.popBackStack() },
+                onLogoutClick = onLogout,
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
                 onBottomNavClick = { route ->
                     val targetRoute = when (route) {
