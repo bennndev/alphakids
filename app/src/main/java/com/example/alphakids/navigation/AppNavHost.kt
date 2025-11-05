@@ -302,7 +302,8 @@ fun AppNavHost(
                 onBottomNavClick = { route ->
                     val targetRoute = when (route) {
                         "home" -> Routes.homeRoute(studentId)
-                        "achievements" -> Routes.achievementsRoute(studentId)
+                        "store" -> Routes.storeRoute(studentId)
+                        "pets" -> Routes.petsRoute(studentId)
                         else -> Routes.dictionaryRoute(studentId)
                     }
                     navigateToStudentBottomNav(targetRoute)
@@ -324,7 +325,8 @@ fun AppNavHost(
                 onBottomNavClick = { route ->
                     val targetRoute = when (route) {
                         "home" -> Routes.homeRoute(studentId)
-                        "dictionary" -> Routes.dictionaryRoute(studentId)
+                        "store" -> Routes.storeRoute(studentId)
+                        "pets" -> Routes.petsRoute(studentId)
                         else -> Routes.achievementsRoute(studentId)
                     }
                     navigateToStudentBottomNav(targetRoute)

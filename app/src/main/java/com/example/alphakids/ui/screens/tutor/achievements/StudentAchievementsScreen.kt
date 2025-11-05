@@ -13,6 +13,8 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.rounded.Android
 import androidx.compose.material.icons.rounded.Book
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Store
+import androidx.compose.material.icons.rounded.Pets
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material3.Icon
@@ -41,8 +43,8 @@ fun StudentAchievementsScreen(
 ) {
     val studentItems = listOf(
         BottomNavItem("home", "Inicio", Icons.Rounded.Home),
-        BottomNavItem("dictionary", "Mi Diccionario", Icons.Rounded.Book),
-        BottomNavItem("achievements", "Mis Logros", Icons.Rounded.WorkspacePremium)
+        BottomNavItem("store", "Tienda", Icons.Rounded.Store),
+        BottomNavItem("pets", "Mascotas", Icons.Rounded.Pets),
     )
 
     Scaffold(
