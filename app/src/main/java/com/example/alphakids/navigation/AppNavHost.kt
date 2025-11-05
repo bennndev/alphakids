@@ -43,7 +43,8 @@ import com.example.alphakids.ui.screens.tutor.games.MyGamesScreen
 import com.example.alphakids.ui.screens.tutor.games.GameWordsScreen
 import com.example.alphakids.ui.screens.tutor.games.AssignedWordsScreen
 import com.example.alphakids.ui.screens.tutor.games.WordPuzzleScreen
-
+import com.example.alphakids.ui.screens.tutor.pets.StudentPetsScreen
+import com.example.alphakids.ui.screens.tutor.store.StudentStoreScreen
 
 @Composable
 fun AppNavHost(
@@ -175,17 +176,17 @@ fun AppNavHost(
                 studentName = studentName,
                 onLogoutClick = onLogout,
                 onBackClick = { navController.popBackStack() },
-                onPlayClick = { 
+                onPlayClick = {
                     android.util.Log.d("AppNavHost", "Play button clicked, navigating with studentId: $studentId")
-                    navController.navigate(Routes.assignedWordsRoute(studentId)) 
+                    navController.navigate(Routes.assignedWordsRoute(studentId))
                 }, // <-- NAVEGA A PALABRAS ASIGNADAS
                 onDictionaryClick = { navigateToStudentBottomNav(Routes.dictionaryRoute(studentId)) },
                 onAchievementsClick = { navigateToStudentBottomNav(Routes.achievementsRoute(studentId)) },
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
                 onBottomNavClick = { route ->
                     val targetRoute = when (route) {
-                        "dictionary" -> Routes.dictionaryRoute(studentId)
-                        "achievements" -> Routes.achievementsRoute(studentId)
+                        "store" -> Routes.storeRoute(studentId)
+                        "pets" -> Routes.petsRoute(studentId)
                         else -> Routes.homeRoute(studentId)
                     }
                     navigateToStudentBottomNav(targetRoute)
@@ -542,6 +543,50 @@ fun AppNavHost(
                 onBackClick = { navController.popBackStack() },
                 onCloseClick = { navController.popBackStack() },
                 onSaveClick = { navController.popBackStack() }
+            )
+        }
+
+        // Tienda
+        composable(
+            route = Routes.STORE,
+            arguments = listOf(navArgument("studentId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val studentId = backStackEntry.arguments?.getString("studentId") ?: "default"
+            StudentStoreScreen(
+                onLogoutClick = onLogout,
+                onBackClick = { navController.popBackStack() },
+                onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
+                onBottomNavClick = { route ->
+                    val targetRoute = when (route) {
+                        "home" -> Routes.homeRoute(studentId)
+                        "pets" -> Routes.petsRoute(studentId)
+                        else -> Routes.storeRoute(studentId)
+                    }
+                    navigateToStudentBottomNav(targetRoute)
+                },
+                currentRoute = "store"
+            )
+        }
+
+        // Mascotas
+        composable(
+            route = Routes.PETS,
+            arguments = listOf(navArgument("studentId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val studentId = backStackEntry.arguments?.getString("studentId") ?: "default"
+            StudentPetsScreen(
+                onLogoutClick = onLogout,
+                onBackClick = { navController.popBackStack() },
+                onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
+                onBottomNavClick = { route ->
+                    val targetRoute = when (route) {
+                        "home" -> Routes.homeRoute(studentId)
+                        "store" -> Routes.storeRoute(studentId)
+                        else -> Routes.petsRoute(studentId)
+                    }
+                    navigateToStudentBottomNav(targetRoute)
+                },
+                currentRoute = "pets"
             )
         }
     }

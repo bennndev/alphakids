@@ -18,6 +18,8 @@ import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.WorkspacePremium
+import androidx.compose.material.icons.rounded.Store
+import androidx.compose.material.icons.rounded.Pets
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -52,8 +54,8 @@ fun StudentHomeScreen(
 ) {
     val studentItems = listOf(
         BottomNavItem("home", "Inicio", Icons.Rounded.Home),
-        BottomNavItem("dictionary", "Mi Diccionario", Icons.Rounded.Book),
-        BottomNavItem("achievements", "Mis Logros", Icons.Rounded.WorkspacePremium)
+        BottomNavItem("store", "Tienda", Icons.Rounded.Store),
+        BottomNavItem("pets", "Mascotas", Icons.Rounded.Pets)
     )
 
     Scaffold(
@@ -135,7 +137,7 @@ fun StudentHomeScreen(
                 )
                 DashboardActionCard(
                     modifier = Modifier.weight(1f),
-                    text = "Mi Diccionario",
+                    text = "Mi diccionario",
                     icon = Icons.Rounded.Book,
                     onClick = onDictionaryClick
                 )
@@ -144,7 +146,7 @@ fun StudentHomeScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             DashboardActionCard(
-                text = "Mis Logros",
+                text = "Mis logros",
                 icon = Icons.Rounded.WorkspacePremium,
                 onClick = onAchievementsClick
             )

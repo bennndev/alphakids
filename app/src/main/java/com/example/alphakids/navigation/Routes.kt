@@ -25,7 +25,13 @@ object Routes {
     const val HOME = "$HOME_BASE/{studentId}"
     fun homeRoute(studentId: String) = "$HOME_BASE/$studentId"
 
-    // Rutas de la barra inferior (BottomNav)
+    // Rutas de la barra inferior (BottomNav) - NUEVAS
+    const val STORE = "store/{studentId}"
+    fun storeRoute(studentId: String) = "store/$studentId"
+
+    const val PETS = "pets/{studentId}"
+    fun petsRoute(studentId: String) = "pets/$studentId"
+    
     const val DICTIONARY = "dictionary/{studentId}"
     fun dictionaryRoute(studentId: String) = "dictionary/$studentId"
 
