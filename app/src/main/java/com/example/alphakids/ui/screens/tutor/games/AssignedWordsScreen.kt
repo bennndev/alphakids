@@ -1,5 +1,6 @@
 package com.example.alphakids.ui.screens.tutor.games
 
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -22,7 +23,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.alphakids.data.firebase.models.AsignacionPalabra
-import com.example.alphakids.ui.screens.tutor.games.components.WordPuzzleCard
 import com.example.alphakids.ui.theme.dmSansFamily
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,6 +35,7 @@ fun AssignedWordsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // Cargar asignaciones al entrar
     LaunchedEffect(studentId) {
         viewModel.loadAssignedWords(studentId)
     }
@@ -66,86 +67,119 @@ fun AssignedWordsScreen(
         )
 
         when {
-            uiState.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
+            uiState.isLoading -> LoadingState()
 
-            uiState.error != null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Error: ${uiState.error}",
-                            color = MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = { viewModel.loadAssignedWords(studentId) }
-                        ) {
-                            Text("Reintentar")
-                        }
-                    }
-                }
-            }
+            uiState.error != null -> ErrorState(
+                error = uiState.error ?: "",
+                onRetry = { viewModel.loadAssignedWords(studentId) }
+            )
 
-            uiState.assignedWords.isEmpty() && !uiState.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "No tienes palabras asignadas",
-                            fontFamily = dmSansFamily,
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Tu tutor te asignará palabras para practicar",
-                            fontFamily = dmSansFamily,
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = { viewModel.loadAssignedWords(studentId) }
-                        ) {
-                            Text("Actualizar")
-                        }
-                    }
-                }
-            }
+            uiState.assignedWords.isEmpty() -> EmptyState(
+                onRetry = { viewModel.loadAssignedWords(studentId) }
+            )
 
-            else -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(uiState.assignedWords) { assignment ->
-                        AssignedWordCard(
-                            assignment = assignment,
-                            onClick = { onWordClick(assignment) }
-                        )
-                    }
-                }
+            else -> AssignedWordsList(
+                assignedWords = uiState.assignedWords,
+                onWordClick = onWordClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadingState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+private fun ErrorState(error: String, onRetry: () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "Error: $error",
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onRetry) {
+                Text("Reintentar")
             }
+        }
+    }
+}
+
+@Composable
+private fun EmptyState(onRetry: () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "No tienes palabras asignadas",
+                fontFamily = dmSansFamily,
+                fontWeight = FontWeight.Medium,
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Tu tutor te asignará palabras para practicar",
+                fontFamily = dmSansFamily,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onRetry) {
+                Text("Actualizar")
+            }
+        }
+    }
+}
+
+@Composable
+private fun AssignedWordsList(
+    assignedWords: List<AsignacionPalabra>,
+    onWordClick: (AsignacionPalabra) -> Unit
+) {
+    val context = LocalContext.current
+
+    // Cargar palabras completadas
+    var completedSet by remember { mutableStateOf<Set<String>>(emptySet()) }
+
+    LaunchedEffect(Unit) {
+        completedSet = WordHistoryStorage
+            .getCompletedWords(context)
+            .map { it.word.trim().uppercase() }
+            .toSet()
+    }
+
+    // Filtrar solo las palabras pendientes
+    val pendingAssignments = assignedWords.filter { assignment ->
+        val word = (assignment.palabraTexto ?: "").trim().uppercase()
+        word !in completedSet
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(pendingAssignments) { assignment ->
+            AssignedWordCard(
+                assignment = assignment,
+                onClick = { onWordClick(assignment) }
+            )
         }
     }
 }
@@ -171,7 +205,6 @@ fun AssignedWordCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Imagen de la palabra
             AsyncImage(
                 model = assignment.palabraImagen,
                 contentDescription = assignment.palabraTexto,
@@ -184,11 +217,9 @@ fun AssignedWordCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = assignment.palabraTexto ?: "Palabra",
+                    text = "", // Palabra oculta
                     fontFamily = dmSansFamily,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
@@ -205,24 +236,30 @@ fun AssignedWordCard(
                 )
             }
 
-            // Indicador de dificultad
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = when (assignment.palabraDificultad?.lowercase()) {
-                    "fácil" -> Color(0xFF4CAF50)
-                    "difícil" -> Color(0xFFF44336)
-                    else -> Color(0xFFFF9800)
-                }
-            ) {
-                Text(
-                    text = assignment.palabraDificultad ?: "Normal",
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontFamily = dmSansFamily,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+            DifficultyChip(assignment.palabraDificultad ?: "Normal")
         }
+    }
+}
+
+@Composable
+private fun DifficultyChip(level: String) {
+    val color = when (level.lowercase()) {
+        "fácil" -> Color(0xFF4CAF50)
+        "difícil" -> Color(0xFFF44336)
+        else -> Color(0xFFFF9800)
+    }
+
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = color
+    ) {
+        Text(
+            text = level,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            color = Color.White,
+            fontSize = 12.sp,
+            fontFamily = dmSansFamily,
+            fontWeight = FontWeight.Medium
+        )
     }
 }

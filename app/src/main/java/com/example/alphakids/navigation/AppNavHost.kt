@@ -1,29 +1,52 @@
 package com.example.alphakids.navigation
 
-import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.alphakids.domain.models.UserRole
 import com.example.alphakids.ui.auth.AuthViewModel
 import com.example.alphakids.ui.word.WordUiState
 import com.example.alphakids.ui.word.WordViewModel
 import com.example.alphakids.ui.components.ActionDialog
-import com.example.alphakids.ui.screens.teacher.words.*
+
+// Teacher
 import com.example.alphakids.ui.screens.teacher.home.TeacherHomeScreen
 import com.example.alphakids.ui.screens.teacher.students.*
-import com.example.alphakids.ui.screens.tutor.profile_selection.ProfileSelectionScreen
+import com.example.alphakids.ui.screens.teacher.words.*
+
+// Tutor - General
 import com.example.alphakids.ui.screens.tutor.home.StudentHomeScreen
+import com.example.alphakids.ui.screens.tutor.profile_selection.ProfileSelectionScreen
 import com.example.alphakids.ui.screens.tutor.dictionary.StudentDictionaryScreen
 import com.example.alphakids.ui.screens.tutor.achievements.StudentAchievementsScreen
-import com.example.alphakids.ui.screens.profile.EditProfileScreen
+
+// Tutor - Profiles
 import com.example.alphakids.ui.screens.tutor.studentprofile.CreateStudentProfileScreen
 import com.example.alphakids.ui.screens.tutor.studentprofile.EditStudentProfileScreen
-import com.example.alphakids.ui.screens.tutor.games.*
+
+// Tutor - Games
+import com.example.alphakids.ui.screens.tutor.games.MyGamesScreen
+import com.example.alphakids.ui.screens.tutor.games.GameWordsScreen
+import com.example.alphakids.ui.screens.tutor.games.AssignedWordsScreen
+import com.example.alphakids.ui.screens.tutor.games.WordPuzzleScreen
+import com.example.alphakids.ui.screens.tutor.games.WordPuzzleViewModel
+import com.example.alphakids.ui.screens.tutor.games.CameraOCRScreen
+
+// Tutor - Store
+import com.example.alphakids.ui.screens.tutor.store.StudentStoreScreen
+import com.example.alphakids.ui.screens.tutor.store.StudentPetsStoreScreen
+import com.example.alphakids.ui.screens.tutor.store.StudentAccessoriesStoreScreen
+
+// Tutor - Pets
+import com.example.alphakids.ui.screens.tutor.pets.StudentPetsScreen
+import com.example.alphakids.ui.screens.tutor.pets.StudentPetDetailScreen
+
+// Profile
+import com.example.alphakids.ui.screens.profile.EditProfileScreen
 
 
 @Composable
@@ -43,6 +66,7 @@ fun AppNavHost(
 
     val onLogout = { authViewModel.logout() }
 
+    // Navegación bottom nav estudiante
     val navigateToStudentBottomNav: (String) -> Unit = { route ->
         navController.navigate(route) {
             popUpTo(Routes.HOME) { saveState = true }
@@ -51,6 +75,7 @@ fun AppNavHost(
         }
     }
 
+    // Navegación bottom nav docente
     val navigateToTeacherBottomNav: (String) -> Unit = { base ->
         val targetRoute = when (base) {
             "students" -> Routes.TEACHER_STUDENTS
@@ -70,7 +95,9 @@ fun AppNavHost(
         modifier = modifier
     ) {
 
-        // ===================== ROL Y LOGIN =====================
+        // ============================================================
+        // ROL Y AUTENTICACIÓN
+        // ============================================================
         composable(Routes.ROLE_SELECTION) {
             com.example.alphakids.ui.screens.common.RoleSelectScreen(
                 onTutorClick = { navController.navigate(Routes.loginRoute(Routes.ROLE_TUTOR)) },
@@ -81,16 +108,16 @@ fun AppNavHost(
         composable(
             Routes.LOGIN,
             arguments = listOf(navArgument("role") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val role = backStackEntry.arguments?.getString("role") ?: Routes.ROLE_TEACHER
+        ) { entry ->
+            val role = entry.arguments?.getString("role") ?: Routes.ROLE_TEACHER
             val isTutor = role == Routes.ROLE_TUTOR
 
             com.example.alphakids.ui.auth.LoginScreen(
                 onBackClick = { navController.popBackStack() },
                 onCloseClick = { navController.popBackStack() },
                 onLoginSuccess = {
-                    val nextRoute = if (isTutor) Routes.PROFILES else Routes.TEACHER_HOME
-                    navController.navigate(nextRoute) {
+                    val next = if (isTutor) Routes.PROFILES else Routes.TEACHER_HOME
+                    navController.navigate(next) {
                         popUpTo(Routes.ROLE_SELECTION) { inclusive = true }
                     }
                 },
@@ -103,16 +130,16 @@ fun AppNavHost(
         composable(
             Routes.REGISTER,
             arguments = listOf(navArgument("role") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val role = backStackEntry.arguments?.getString("role") ?: Routes.ROLE_TEACHER
+        ) { entry ->
+            val role = entry.arguments?.getString("role") ?: Routes.ROLE_TEACHER
             val isTutor = role == Routes.ROLE_TUTOR
 
             com.example.alphakids.ui.auth.RegisterScreen(
                 onBackClick = { navController.popBackStack() },
                 onCloseClick = { navController.popBackStack() },
                 onRegisterSuccess = {
-                    val nextRoute = if (isTutor) Routes.PROFILES else Routes.TEACHER_HOME
-                    navController.navigate(nextRoute) {
+                    val next = if (isTutor) Routes.PROFILES else Routes.TEACHER_HOME
+                    navController.navigate(next) {
                         popUpTo(Routes.ROLE_SELECTION) { inclusive = true }
                     }
                 },
@@ -120,7 +147,10 @@ fun AppNavHost(
             )
         }
 
-        // ===================== PERFILES =====================
+
+        // ============================================================
+        // PERFILES (TUTOR)
+        // ============================================================
         composable(Routes.PROFILES) {
             ProfileSelectionScreen(
                 onProfileClick = { navController.navigate(Routes.homeRoute(it)) },
@@ -130,7 +160,9 @@ fun AppNavHost(
             )
         }
 
-        // ===================== HOME DEL ESTUDIANTE =====================
+        // ============================================================
+        // HOME DEL ESTUDIANTE
+        // ============================================================
         composable(
             Routes.HOME,
             arguments = listOf(navArgument("studentId") { type = NavType.StringType })
@@ -141,7 +173,9 @@ fun AppNavHost(
                 studentName = "Estudiante",
                 onLogoutClick = onLogout,
                 onBackClick = { navController.popBackStack() },
-                onPlayClick = { navController.navigate(Routes.assignedWordsRoute(studentId)) },
+                onPlayClick = {
+                    navController.navigate(Routes.assignedWordsRoute(studentId))
+                },
                 onDictionaryClick = { navigateToStudentBottomNav(Routes.dictionaryRoute(studentId)) },
                 onAchievementsClick = { navigateToStudentBottomNav(Routes.achievementsRoute(studentId)) },
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
@@ -157,7 +191,9 @@ fun AppNavHost(
             )
         }
 
-        // ===================== JUEGOS =====================
+        // ============================================================
+        // JUEGOS
+        // ============================================================
         composable(
             Routes.MY_GAMES,
             arguments = listOf(navArgument("studentId") { type = NavType.StringType })
@@ -237,12 +273,15 @@ fun AppNavHost(
             )
         }
 
-        // ===================== DICCIONARIO =====================
+        // ============================================================
+        // DICCIONARIO
+        // ============================================================
         composable(
             Routes.DICTIONARY,
             arguments = listOf(navArgument("studentId") { type = NavType.StringType })
         ) { entry ->
             val studentId = entry.arguments?.getString("studentId") ?: "default"
+
             StudentDictionaryScreen(
                 onLogoutClick = onLogout,
                 onBackClick = { navController.popBackStack() },
@@ -261,12 +300,15 @@ fun AppNavHost(
             )
         }
 
-        // ===================== LOGROS =====================
+        // ============================================================
+        // LOGROS
+        // ============================================================
         composable(
             Routes.ACHIEVEMENTS,
             arguments = listOf(navArgument("studentId") { type = NavType.StringType })
         ) { entry ->
             val studentId = entry.arguments?.getString("studentId") ?: "default"
+
             StudentAchievementsScreen(
                 onLogoutClick = onLogout,
                 onBackClick = { navController.popBackStack() },
@@ -284,7 +326,10 @@ fun AppNavHost(
             )
         }
 
-        // ===================== DOCENTE =====================
+
+        // ============================================================
+        // DOCENTE
+        // ============================================================
         composable(Routes.TEACHER_HOME) {
             TeacherHomeScreen(
                 onAssignWordsClick = { navController.navigate(Routes.ASSIGN_WORD) },
@@ -324,8 +369,8 @@ fun AppNavHost(
             )
         }
 
-        composable(Routes.WORDS) { backStackEntry ->
-            val viewModel: WordViewModel = hiltViewModel(backStackEntry)
+        composable(Routes.WORDS) { entry ->
+            val viewModel: WordViewModel = hiltViewModel(entry)
             val words by viewModel.words.collectAsState()
             val filter by viewModel.filterDifficulty.collectAsState()
 
@@ -349,9 +394,7 @@ fun AppNavHost(
             arguments = listOf(navArgument("wordId") { type = NavType.StringType; nullable = true })
         ) { entry ->
             val wordId = entry.arguments?.getString("wordId")
-            val parent = remember(entry) {
-                navController.getBackStackEntry(Routes.WORDS)
-            }
+            val parent = navController.getBackStackEntry(Routes.WORDS)
             val viewModel: WordViewModel = hiltViewModel(parent)
             val words by viewModel.words.collectAsState()
             val word = words.find { it.id == wordId }
@@ -372,9 +415,7 @@ fun AppNavHost(
             val wordId = entry.arguments?.getString("wordId") ?: ""
             var showDeleteDialog by remember { mutableStateOf(false) }
 
-            val parent = remember(entry) {
-                navController.getBackStackEntry(Routes.WORDS)
-            }
+            val parent = navController.getBackStackEntry(Routes.WORDS)
             val viewModel: WordViewModel = hiltViewModel(parent)
             val words by viewModel.words.collectAsState()
             val uiState by viewModel.uiState.collectAsState()
@@ -394,7 +435,7 @@ fun AppNavHost(
 
             if (showDeleteDialog) {
                 ActionDialog(
-                    icon = androidx.compose.material.icons.Icons.Rounded.Warning,
+                    icon = androidx.compose.material.icons.rounded.Warning,
                     message = "¿Estás seguro de eliminar esta palabra?",
                     primaryButtonText = "Eliminar",
                     onPrimaryButtonClick = { viewModel.deleteWord(wordId) },
@@ -430,6 +471,9 @@ fun AppNavHost(
             )
         }
 
+        // ============================================================
+        // PERFIL GENERAL
+        // ============================================================
         composable(
             Routes.EDIT_PROFILE,
             arguments = listOf(navArgument("role") { type = NavType.StringType })
@@ -459,6 +503,144 @@ fun AppNavHost(
                 onBackClick = { navController.popBackStack() },
                 onCloseClick = { navController.popBackStack() },
                 onSaveClick = { navController.popBackStack() }
+            )
+        }
+
+        // ============================================================
+        // TIENDA
+        // ============================================================
+        composable(
+            route = Routes.STORE,
+            arguments = listOf(navArgument("studentId") { type = NavType.StringType })
+        ) { entry ->
+            val studentId = entry.arguments?.getString("studentId") ?: "default"
+
+            StudentStoreScreen(
+                onLogoutClick = onLogout,
+                onBackClick = { navController.popBackStack() },
+                onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
+                onBottomNavClick = { route ->
+                    val targetRoute = when (route) {
+                        "home" -> Routes.homeRoute(studentId)
+                        "pets" -> Routes.petsRoute(studentId)
+                        else -> Routes.storeRoute(studentId)
+                    }
+                    navigateToStudentBottomNav(targetRoute)
+                },
+                currentRoute = "store",
+                onPetsStoreClick = { navController.navigate(Routes.storePetsRoute(studentId)) },
+                onAccessoriesStoreClick = { navController.navigate(Routes.storeAccessoriesRoute(studentId)) }
+            )
+        }
+
+        // Tienda - Mascotas
+        composable(
+            route = Routes.STORE_PETS,
+            arguments = listOf(navArgument("studentId") { type = NavType.StringType })
+        ) { entry ->
+            val studentId = entry.arguments?.getString("studentId") ?: "default"
+
+            StudentPetsStoreScreen(
+                onBackClick = { navController.popBackStack() },
+                onLogoutClick = onLogout,
+                onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
+                onBottomNavClick = { route ->
+                    val targetRoute = when (route) {
+                        "home" -> Routes.homeRoute(studentId)
+                        "pets" -> Routes.petsRoute(studentId)
+                        else -> Routes.storeRoute(studentId)
+                    }
+                    navigateToStudentBottomNav(targetRoute)
+                },
+                currentRoute = "store",
+                studentId = studentId,
+                dogImageResId = com.example.alphakids.R.drawable.ic_happy_dog,
+                catImageResId = com.example.alphakids.R.drawable.ic_happy_cat,
+                coins = 123
+            )
+        }
+
+        // Tienda - Accesorios
+        composable(
+            route = Routes.STORE_ACCESSORIES,
+            arguments = listOf(navArgument("studentId") { type = NavType.StringType })
+        ) { entry ->
+            val studentId = entry.arguments?.getString("studentId") ?: "default"
+
+            StudentAccessoriesStoreScreen(
+                onBackClick = { navController.popBackStack() },
+                onLogoutClick = onLogout,
+                onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
+                onBottomNavClick = { route ->
+                    val targetRoute = when (route) {
+                        "home" -> Routes.homeRoute(studentId)
+                        "pets" -> Routes.petsRoute(studentId)
+                        else -> Routes.storeRoute(studentId)
+                    }
+                    navigateToStudentBottomNav(targetRoute)
+                },
+                currentRoute = "store",
+                studentId = studentId,
+                coins = 123,
+                croquetasImageResId = com.example.alphakids.R.drawable.ic_kibble_dog_cat,
+                huesoImageResId = com.example.alphakids.R.drawable.ic_bone_dog,
+                pescadoImageResId = com.example.alphakids.R.drawable.ic_fish_cat
+            )
+        }
+
+        // ============================================================
+        // MASCOTAS
+        // ============================================================
+        composable(
+            route = Routes.PETS,
+            arguments = listOf(navArgument("studentId") { type = NavType.StringType })
+        ) { entry ->
+            val studentId = entry.arguments?.getString("studentId") ?: "default"
+
+            StudentPetsScreen(
+                onLogoutClick = onLogout,
+                onBackClick = { navController.popBackStack() },
+                onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
+                onBottomNavClick = { route ->
+                    val targetRoute = when (route) {
+                        "home" -> Routes.homeRoute(studentId)
+                        "store" -> Routes.storeRoute(studentId)
+                        else -> Routes.petsRoute(studentId)
+                    }
+                    navigateToStudentBottomNav(targetRoute)
+                },
+                currentRoute = "pets",
+                onPetDetailClick = { petName ->
+                    navController.navigate(Routes.petDetailRoute(studentId, petName))
+                }
+            )
+        }
+
+        // Mascota Detalle
+        composable(
+            route = Routes.PET_DETAIL,
+            arguments = listOf(
+                navArgument("studentId") { type = NavType.StringType },
+                navArgument("petName") { type = NavType.StringType }
+            )
+        ) { entry ->
+            val studentId = entry.arguments?.getString("studentId") ?: "default"
+            val petName = entry.arguments?.getString("petName") ?: "Mi Mascota"
+
+            StudentPetDetailScreen(
+                onBackClick = { navController.popBackStack() },
+                onLogoutClick = onLogout,
+                onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
+                onBottomNavClick = { route ->
+                    val targetRoute = when (route) {
+                        "home" -> Routes.homeRoute(studentId)
+                        "store" -> Routes.storeRoute(studentId)
+                        else -> Routes.petsRoute(studentId)
+                    }
+                    navigateToStudentBottomNav(targetRoute)
+                },
+                currentRoute = "pets",
+                petName = petName
             )
         }
     }
