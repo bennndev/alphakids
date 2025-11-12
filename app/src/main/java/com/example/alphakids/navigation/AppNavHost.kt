@@ -8,46 +8,49 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.example.alphakids.domain.models.UserRole
+
 import com.example.alphakids.ui.auth.AuthViewModel
 import com.example.alphakids.ui.word.WordUiState
 import com.example.alphakids.ui.word.WordViewModel
 import com.example.alphakids.ui.components.ActionDialog
 
-// Teacher
+// Icons
+import androidx.compose.material.icons.rounded.Warning
+
+// Teacher Screens
 import com.example.alphakids.ui.screens.teacher.home.TeacherHomeScreen
 import com.example.alphakids.ui.screens.teacher.students.*
 import com.example.alphakids.ui.screens.teacher.words.*
 
-// Tutor - General
+// Tutor General Screens
 import com.example.alphakids.ui.screens.tutor.home.StudentHomeScreen
 import com.example.alphakids.ui.screens.tutor.profile_selection.ProfileSelectionScreen
 import com.example.alphakids.ui.screens.tutor.dictionary.StudentDictionaryScreen
 import com.example.alphakids.ui.screens.tutor.achievements.StudentAchievementsScreen
 
-// Tutor - Profiles
+// Tutor Profiles
 import com.example.alphakids.ui.screens.tutor.studentprofile.CreateStudentProfileScreen
 import com.example.alphakids.ui.screens.tutor.studentprofile.EditStudentProfileScreen
 
-// Tutor - Games
-import com.example.alphakids.ui.screens.tutor.games.MyGamesScreen
-import com.example.alphakids.ui.screens.tutor.games.GameWordsScreen
-import com.example.alphakids.ui.screens.tutor.games.AssignedWordsScreen
+// Games
+import com.example.alphakids.ui.screens.tutor.games.*
 import com.example.alphakids.ui.screens.tutor.games.WordPuzzleScreen
 import com.example.alphakids.ui.screens.tutor.games.WordPuzzleViewModel
 import com.example.alphakids.ui.screens.tutor.games.CameraOCRScreen
 
-// Tutor - Store
+// Store
 import com.example.alphakids.ui.screens.tutor.store.StudentStoreScreen
 import com.example.alphakids.ui.screens.tutor.store.StudentPetsStoreScreen
 import com.example.alphakids.ui.screens.tutor.store.StudentAccessoriesStoreScreen
 
-// Tutor - Pets
+// Pets
 import com.example.alphakids.ui.screens.tutor.pets.StudentPetsScreen
 import com.example.alphakids.ui.screens.tutor.pets.StudentPetDetailScreen
 
-// Profile
+// Profile General
 import com.example.alphakids.ui.screens.profile.EditProfileScreen
-
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 
 @Composable
 fun AppNavHost(
@@ -66,7 +69,7 @@ fun AppNavHost(
 
     val onLogout = { authViewModel.logout() }
 
-    // Navegación bottom nav estudiante
+    // Navegación inferior estudiante
     val navigateToStudentBottomNav: (String) -> Unit = { route ->
         navController.navigate(route) {
             popUpTo(Routes.HOME) { saveState = true }
@@ -75,7 +78,7 @@ fun AppNavHost(
         }
     }
 
-    // Navegación bottom nav docente
+    // Navegación inferior docente
     val navigateToTeacherBottomNav: (String) -> Unit = { base ->
         val targetRoute = when (base) {
             "students" -> Routes.TEACHER_STUDENTS
@@ -96,7 +99,7 @@ fun AppNavHost(
     ) {
 
         // ============================================================
-        // ROL Y AUTENTICACIÓN
+        // ROL + LOGIN
         // ============================================================
         composable(Routes.ROLE_SELECTION) {
             com.example.alphakids.ui.screens.common.RoleSelectScreen(
@@ -147,9 +150,8 @@ fun AppNavHost(
             )
         }
 
-
         // ============================================================
-        // PERFILES (TUTOR)
+        // PERFILES TUTOR
         // ============================================================
         composable(Routes.PROFILES) {
             ProfileSelectionScreen(
@@ -161,21 +163,20 @@ fun AppNavHost(
         }
 
         // ============================================================
-        // HOME DEL ESTUDIANTE
+        // HOME ESTUDIANTE
         // ============================================================
         composable(
             Routes.HOME,
             arguments = listOf(navArgument("studentId") { type = NavType.StringType })
         ) { entry ->
+
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             StudentHomeScreen(
                 studentName = "Estudiante",
                 onLogoutClick = onLogout,
                 onBackClick = { navController.popBackStack() },
-                onPlayClick = {
-                    navController.navigate(Routes.assignedWordsRoute(studentId))
-                },
+                onPlayClick = { navController.navigate(Routes.assignedWordsRoute(studentId)) },
                 onDictionaryClick = { navigateToStudentBottomNav(Routes.dictionaryRoute(studentId)) },
                 onAchievementsClick = { navigateToStudentBottomNav(Routes.achievementsRoute(studentId)) },
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
@@ -198,7 +199,9 @@ fun AppNavHost(
             Routes.MY_GAMES,
             arguments = listOf(navArgument("studentId") { type = NavType.StringType })
         ) { entry ->
+
             val studentId = entry.arguments?.getString("studentId") ?: "default"
+
             MyGamesScreen(
                 onBackClick = { navController.popBackStack() },
                 onWordsGameClick = { navController.navigate(Routes.gameWordsRoute(studentId)) }
@@ -211,7 +214,7 @@ fun AppNavHost(
         ) {
             GameWordsScreen(
                 onBackClick = { navController.popBackStack() },
-                onWordClick = { navController.navigate(Routes.GAME) }
+                onWordClick = { /* no usado */ }
             )
         }
 
@@ -219,6 +222,7 @@ fun AppNavHost(
             Routes.ASSIGNED_WORDS,
             arguments = listOf(navArgument("studentId") { type = NavType.StringType })
         ) { entry ->
+
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             AssignedWordsScreen(
@@ -234,12 +238,10 @@ fun AppNavHost(
             Routes.WORD_PUZZLE,
             arguments = listOf(navArgument("assignmentId") { type = NavType.StringType })
         ) { entry ->
+
             val assignmentId = entry.arguments?.getString("assignmentId") ?: ""
 
-            val parentEntry = remember(entry) {
-                navController.getBackStackEntry(Routes.ASSIGNED_WORDS)
-            }
-            val viewModel: WordPuzzleViewModel = hiltViewModel(parentEntry)
+            val viewModel: WordPuzzleViewModel = hiltViewModel(entry)
             val uiState by viewModel.uiState.collectAsState()
 
             LaunchedEffect(assignmentId) {
@@ -252,7 +254,9 @@ fun AppNavHost(
                 onTakePhotoClick = {
                     val targetWord = uiState.assignment?.palabraTexto ?: ""
                     if (targetWord.isNotEmpty()) {
-                        navController.navigate(Routes.cameraOCRRoute(assignmentId, targetWord))
+                        navController.navigate(
+                            Routes.cameraOCRRoute(assignmentId, targetWord)
+                        )
                     }
                 }
             )
@@ -265,6 +269,7 @@ fun AppNavHost(
                 navArgument("targetWord") { type = NavType.StringType }
             )
         ) { entry ->
+
             CameraOCRScreen(
                 assignmentId = entry.arguments?.getString("assignmentId") ?: "",
                 targetWord = entry.arguments?.getString("targetWord") ?: "",
@@ -280,6 +285,7 @@ fun AppNavHost(
             Routes.DICTIONARY,
             arguments = listOf(navArgument("studentId") { type = NavType.StringType })
         ) { entry ->
+
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             StudentDictionaryScreen(
@@ -307,6 +313,7 @@ fun AppNavHost(
             Routes.ACHIEVEMENTS,
             arguments = listOf(navArgument("studentId") { type = NavType.StringType })
         ) { entry ->
+
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             StudentAchievementsScreen(
@@ -325,7 +332,6 @@ fun AppNavHost(
                 currentRoute = "achievements"
             )
         }
-
 
         // ============================================================
         // DOCENTE
@@ -356,6 +362,7 @@ fun AppNavHost(
             Routes.TEACHER_STUDENT_DETAIL,
             arguments = listOf(navArgument("studentId") { type = NavType.StringType })
         ) { entry ->
+
             val studentId = entry.arguments?.getString("studentId") ?: ""
 
             StudentDetailScreen(
@@ -370,6 +377,7 @@ fun AppNavHost(
         }
 
         composable(Routes.WORDS) { entry ->
+
             val viewModel: WordViewModel = hiltViewModel(entry)
             val words by viewModel.words.collectAsState()
             val filter by viewModel.filterDifficulty.collectAsState()
@@ -391,11 +399,13 @@ fun AppNavHost(
 
         composable(
             Routes.WORD_EDIT,
-            arguments = listOf(navArgument("wordId") { type = NavType.StringType; nullable = true })
+            arguments = listOf(
+                navArgument("wordId") { type = NavType.StringType; nullable = true }
+            )
         ) { entry ->
+
             val wordId = entry.arguments?.getString("wordId")
-            val parent = navController.getBackStackEntry(Routes.WORDS)
-            val viewModel: WordViewModel = hiltViewModel(parent)
+            val viewModel: WordViewModel = hiltViewModel(entry)
             val words by viewModel.words.collectAsState()
             val word = words.find { it.id == wordId }
 
@@ -412,13 +422,15 @@ fun AppNavHost(
             Routes.WORD_DETAIL,
             arguments = listOf(navArgument("wordId") { type = NavType.StringType })
         ) { entry ->
-            val wordId = entry.arguments?.getString("wordId") ?: ""
-            var showDeleteDialog by remember { mutableStateOf(false) }
 
-            val parent = navController.getBackStackEntry(Routes.WORDS)
-            val viewModel: WordViewModel = hiltViewModel(parent)
+            val wordId = entry.arguments?.getString("wordId") ?: ""
+
+            val viewModel: WordViewModel = hiltViewModel(entry)
             val words by viewModel.words.collectAsState()
             val uiState by viewModel.uiState.collectAsState()
+
+            var showDeleteDialog by remember { mutableStateOf(false) }
+
             val word = words.find { it.id == wordId }
 
             WordDetailScreen(
@@ -435,14 +447,14 @@ fun AppNavHost(
 
             if (showDeleteDialog) {
                 ActionDialog(
-                    icon = androidx.compose.material.icons.rounded.Warning,
+                    icon = Icons.Default.Warning,
                     message = "¿Estás seguro de eliminar esta palabra?",
                     primaryButtonText = "Eliminar",
                     onPrimaryButtonClick = { viewModel.deleteWord(wordId) },
                     secondaryButtonText = "Cancelar",
                     onSecondaryButtonClick = { showDeleteDialog = false },
                     onDismissRequest = { showDeleteDialog = false },
-                    isError = true
+                    isError =true
                 )
             }
 
@@ -478,7 +490,9 @@ fun AppNavHost(
             Routes.EDIT_PROFILE,
             arguments = listOf(navArgument("role") { type = NavType.StringType })
         ) { entry ->
+
             val isTutor = entry.arguments?.getString("role") == Routes.ROLE_TUTOR
+
             EditProfileScreen(
                 onBackClick = { navController.popBackStack() },
                 onCloseClick = { navController.popBackStack() },
@@ -513,6 +527,7 @@ fun AppNavHost(
             route = Routes.STORE,
             arguments = listOf(navArgument("studentId") { type = NavType.StringType })
         ) { entry ->
+
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             StudentStoreScreen(
@@ -533,11 +548,12 @@ fun AppNavHost(
             )
         }
 
-        // Tienda - Mascotas
+        // Mascotas tienda
         composable(
             route = Routes.STORE_PETS,
             arguments = listOf(navArgument("studentId") { type = NavType.StringType })
         ) { entry ->
+
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             StudentPetsStoreScreen(
@@ -560,11 +576,12 @@ fun AppNavHost(
             )
         }
 
-        // Tienda - Accesorios
+        // Accesorios tienda
         composable(
             route = Routes.STORE_ACCESSORIES,
             arguments = listOf(navArgument("studentId") { type = NavType.StringType })
         ) { entry ->
+
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             StudentAccessoriesStoreScreen(
@@ -589,12 +606,13 @@ fun AppNavHost(
         }
 
         // ============================================================
-        // MASCOTAS
+        // MASCOTAS (Pantallas principales)
         // ============================================================
         composable(
             route = Routes.PETS,
             arguments = listOf(navArgument("studentId") { type = NavType.StringType })
         ) { entry ->
+
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             StudentPetsScreen(
@@ -616,7 +634,7 @@ fun AppNavHost(
             )
         }
 
-        // Mascota Detalle
+        // Mascota detalle
         composable(
             route = Routes.PET_DETAIL,
             arguments = listOf(
@@ -624,6 +642,7 @@ fun AppNavHost(
                 navArgument("petName") { type = NavType.StringType }
             )
         ) { entry ->
+
             val studentId = entry.arguments?.getString("studentId") ?: "default"
             val petName = entry.arguments?.getString("petName") ?: "Mi Mascota"
 
