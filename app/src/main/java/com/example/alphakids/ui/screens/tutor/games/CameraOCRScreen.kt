@@ -1,8 +1,6 @@
 package com.example.alphakids.ui.screens.tutor.games
 
 import android.Manifest
-import android.content.Context
-import android.media.MediaPlayer
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.camera.core.*
@@ -33,52 +31,39 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.alphakids.ui.theme.dmSansFamily
+import com.example.alphakids.ui.utils.MusicManager // Clase centralizada para control de audio
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.Exception
 
-// 🔊 URLs de audio desde Firebase Storage (¡REEMPLAZA EL TOKEN DE FALLO!)
-private const val AUDIO_EXITO_URL = "https://firebasestorage.googleapis.com/v0/b/alphakids-tecsup.firebasestorage.app/o/audio_exito.mp3?alt=media&token=d484c88c-255e-4f41-a638-04da263d476a"
-private const val AUDIO_FALLO_URL = "https://firebasestorage.googleapis.com/v0/b/alphakids-tecsup.firebasestorage.app/o/audio_fallo.mp3?alt=media&token=EL_TOKEN_DE_FALLO" // ⚠️ ¡REEMPLAZAR ESTE TOKEN!
+// 🔊 URLs de audio desde Firebase Storage
+private const val AUDIO_EXITO_URL =
+    "https://firebasestorage.googleapis.com/v0/b/alphakids-tecsup.firebasestorage.app/o/audio_exito.mp3?alt=media&token=d484c88c-253e-4f41-a638-04da263d476a"
+private const val AUDIO_FALLO_URL =
+    "https://firebasestorage.googleapis.com/v0/b/alphakids-tecsup.firebasestorage.app/o/audio_fallo.mp3?alt=media&token=EL_TOKEN_DE_FALLO"
 
-// 🔊 Variable Singleton para controlar el audio
-private var audioPlayer: MediaPlayer? = null
+// 🔊 Control de efectos
+private var sfxPlayer: android.media.MediaPlayer? = null
 
-/**
- * Función para reproducir el audio desde una URL, controlando el ciclo de vida del MediaPlayer.
- */
-fun playAudioFromUrl(url: String) {
-    // 1. Detener y liberar el reproductor anterior si existe
-    audioPlayer?.release()
-    audioPlayer = null
-
-    // 2. Crear nueva instancia
-    audioPlayer = MediaPlayer().apply {
-        try {
+fun playSfxAudioFromUrl(url: String) {
+    try {
+        sfxPlayer?.release()
+        sfxPlayer = android.media.MediaPlayer().apply {
             setDataSource(url)
-
-            setOnPreparedListener {
-                it.start()
-            }
-
+            setOnPreparedListener { it.start() }
             setOnCompletionListener {
-                it.release() // Libera los recursos al terminar
-                audioPlayer = null // Restablece la variable
+                it.release()
+                sfxPlayer = null
             }
-
-            prepareAsync() // Esencial para URLs
-        } catch (e: Exception) {
-            Log.e("AudioPlayer", "Error al configurar o reproducir audio: ${e.message}")
-            audioPlayer = null
+            prepareAsync()
         }
+    } catch (e: Exception) {
+        Log.e("AudioPlayer", "Error al reproducir SFX: ${e.message}")
     }
 }
-
-// ---------------------------------------------------------------------------------
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -92,20 +77,17 @@ fun CameraOCRScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
-    val coroutineScope = rememberCoroutineScope() // Para las coroutines de fallo/éxito
 
     var previewView by remember { mutableStateOf<PreviewView?>(null) }
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var detectedText by remember { mutableStateOf("") }
     var showSuccessAnimation by remember { mutableStateOf(false) }
     var isWordCompleted by remember { mutableStateOf(false) }
-
-    // Bandera para limitar la reproducción del audio de fallo (EVITA REPETICIÓN CONTINUA)
     var isFailurePlayed by remember { mutableStateOf(false) }
 
-    // TTS Setup (se mantiene por si necesitas la voz en el futuro)
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
 
+    // 🎶 Al entrar al juego: pausa la música global y arranca la del juego
     LaunchedEffect(Unit) {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
@@ -113,16 +95,26 @@ fun CameraOCRScreen(
                 tts?.setSpeechRate(0.9f)
             }
         }
+        // Pausa la música de la APP y empieza la del juego.
+        MusicManager.pauseMusicaApp()
+        MusicManager.startMusicaJuego(context)
     }
 
+    // 🚪 Al salir del juego: limpia y reanuda música global
     DisposableEffect(Unit) {
         onDispose {
             tts?.shutdown()
-            audioPlayer?.release() // 🔊 Asegura liberar el MediaPlayer al salir
+            sfxPlayer?.release()
+
+            // Detiene la música del juego (por si el usuario presiona atrás)
+            MusicManager.stopMusicaJuego()
+
+            // Reanuda la música de la APP al salir de esta pantalla.
+            MusicManager.resumeMusicaApp()
         }
     }
 
-    // Lógica principal: Check de palabra completada y manejo de audios
+    // 🔤 Detección y control de audios
     LaunchedEffect(detectedText, targetWord) {
         val detected = detectedText.trim().uppercase()
         val target = targetWord.trim().uppercase()
@@ -131,45 +123,38 @@ fun CameraOCRScreen(
         if (!isWordCompleted && detected == target) {
             isWordCompleted = true
             showSuccessAnimation = true
-            isFailurePlayed = false // Reinicia la bandera de fallo
+            isFailurePlayed = false
 
-            // 🔊 Reproducir audio de éxito
-            playAudioFromUrl(AUDIO_EXITO_URL)
+            // 🛑 1. DETENER la música del juego INMEDIATAMENTE
+            MusicManager.stopMusicaJuego()
 
-            // Play TTS (opcional)
+            // 🔊 2. Reproducir audio de éxito
+            playSfxAudioFromUrl(AUDIO_EXITO_URL)
 
-
-            // Save to storage
-            // WordHistoryStorage.saveCompletedWord(context, targetWord) // Asegúrate de tener esta clase
-
-            // Ocultar animación y completar
+            // ⏳ 3. Esperar a que termine la animación/SFX (3 segundos)
             delay(3000)
+
+            // ✅ 4. REANUDAR la música de la App solo después del delay, ¡evitando la mezcla!
+            MusicManager.resumeMusicaApp()
+
+            // 🚪 5. Salir de la pantalla
             onWordCompleted()
 
-            // 2. Lógica de Fallo (detecta texto, pero no es el correcto)
         } else if (!isWordCompleted && detected.length >= 3 && detected != target) {
-
+            // Lógica de Fallo (se mantiene igual)
             if (!isFailurePlayed) {
-                isFailurePlayed = true // Activa la bandera para evitar repetición
-
-                // 🔊 Reproducir audio de fallo
-                playAudioFromUrl(AUDIO_FALLO_URL)
-
-                // Después de 2 segundos, permite que el audio de fallo se reproduzca de nuevo
+                isFailurePlayed = true
+                playSfxAudioFromUrl(AUDIO_FALLO_URL)
                 delay(2000)
                 isFailurePlayed = false
             }
         }
 
-        // 3. Reiniciar bandera de fallo si no hay texto detectado
-        if (detected.isEmpty()) {
-            isFailurePlayed = false
-        }
+        if (detected.isEmpty()) isFailurePlayed = false
     }
 
     if (cameraPermissionState.status.isGranted) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Camera Preview
             AndroidView(
                 factory = { ctx ->
                     PreviewView(ctx).apply {
@@ -180,40 +165,22 @@ fun CameraOCRScreen(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // ROI Overlay
+            // 📸 Overlay ROI (se mantiene igual)
             val density = LocalDensity.current
-            Canvas(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                val canvasWidth = size.width
-                val canvasHeight = size.height
-                val roiWidth = canvasWidth * 0.8f
-                val roiHeight = canvasHeight * 0.3f
-                val roiLeft = (canvasWidth - roiWidth) / 2
-                val roiTop = (canvasHeight - roiHeight) / 2
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val w = size.width
+                val h = size.height
+                val rw = w * 0.8f
+                val rh = h * 0.3f
+                val left = (w - rw) / 2
+                val top = (h - rh) / 2
 
-                drawRect(
-                    color = Color.Black.copy(alpha = 0.5f),
-                    topLeft = Offset.Zero,
-                    size = size
-                )
-
-                drawRect(
-                    color = Color.Transparent,
-                    topLeft = Offset(roiLeft, roiTop),
-                    size = Size(roiWidth, roiHeight),
-                    blendMode = androidx.compose.ui.graphics.BlendMode.Clear
-                )
-
-                drawRect(
-                    color = Color.Green,
-                    topLeft = Offset(roiLeft, roiTop),
-                    size = Size(roiWidth, roiHeight),
-                    style = Stroke(width = with(density) { 4.dp.toPx() })
-                )
+                drawRect(Color.Black.copy(alpha = 0.5f), Offset.Zero, size)
+                drawRect(Color.Transparent, Offset(left, top), Size(rw, rh), blendMode = androidx.compose.ui.graphics.BlendMode.Clear)
+                drawRect(Color.Green, Offset(left, top), Size(rw, rh), style = Stroke(width = with(density) { 4.dp.toPx() }))
             }
 
-            // Top Bar
+            // 🔙 Top Bar (se mantiene igual)
             TopAppBar(
                 title = {
                     Text(
@@ -225,11 +192,7 @@ fun CameraOCRScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Volver",
-                            tint = Color.White
-                        )
+                        Icon(Icons.Default.ArrowBack, "Volver", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -237,7 +200,7 @@ fun CameraOCRScreen(
                 )
             )
 
-            // Detected Text Display
+            // 📝 Texto detectado (se mantiene igual)
             if (detectedText.isNotEmpty()) {
                 Card(
                     modifier = Modifier
@@ -257,7 +220,7 @@ fun CameraOCRScreen(
                 }
             }
 
-            // Success Animation
+            // 🎉 Animación de éxito (se mantiene igual)
             AnimatedVisibility(
                 visible = showSuccessAnimation,
                 enter = scaleIn() + fadeIn(),
@@ -276,69 +239,41 @@ fun CameraOCRScreen(
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = "🎉",
-                            fontSize = 48.sp
-                        )
-                        Text(
-                            text = "¡Palabra Completada!",
-                            color = Color.White,
-                            fontFamily = dmSansFamily,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp
-                        )
-                        Text(
-                            text = targetWord,
-                            color = Color.White,
-                            fontFamily = dmSansFamily,
-                            fontSize = 24.sp
-                        )
+                        Text("🎉", fontSize = 48.sp)
+                        Text("¡Palabra Completada!", color = Color.White, fontFamily = dmSansFamily, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        Text(targetWord, color = Color.White, fontFamily = dmSansFamily, fontSize = 24.sp)
                     }
                 }
             }
         }
 
-        // Setup Camera
+        // 📸 Configurar cámara (se mantiene igual)
         LaunchedEffect(previewView) {
             previewView?.let { preview ->
                 val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
                 cameraProvider = cameraProviderFuture.get()
-
-                setupCamera(
-                    cameraProvider = cameraProvider!!,
-                    previewView = preview,
-                    lifecycleOwner = lifecycleOwner,
-                    targetWord = targetWord,
-                    onTextDetected = { text ->
-                        detectedText = text
-                    }
-                )
+                setupCamera(cameraProvider!!, preview, lifecycleOwner, targetWord) { text ->
+                    detectedText = text
+                }
             }
         }
     } else {
-        // Permission Request
+        // 🚫 Solicitud de permiso (se mantiene igual)
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Se necesita permiso de cámara para usar esta función",
-                fontFamily = dmSansFamily,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = { cameraPermissionState.launchPermissionRequest() }
-            ) {
-                Text("Conceder Permiso")
+            Text("Se necesita permiso de cámara para usar este juego")
+            Spacer(Modifier.height(8.dp))
+            Button(onClick = { cameraPermissionState.launchPermissionRequest() }) {
+                Text("Conceder permiso")
             }
         }
     }
 }
 
+// ---------------------------------------------------------------------------------
 
 private fun setupCamera(
     cameraProvider: ProcessCameraProvider,
@@ -361,14 +296,12 @@ private fun setupCamera(
             )
         }
 
-    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+    val selector = CameraSelector.DEFAULT_BACK_CAMERA
 
     try {
         cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(
-            lifecycleOwner, cameraSelector, preview, imageAnalyzer
-        )
-    } catch (exc: Exception) {
-        Log.e("CameraOCR", "Use case binding failed", exc)
+        cameraProvider.bindToLifecycle(lifecycleOwner, selector, preview, imageAnalyzer)
+    } catch (e: Exception) {
+        Log.e("CameraOCR", "Error al iniciar cámara", e)
     }
 }
