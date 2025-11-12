@@ -50,9 +50,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
 import java.util.concurrent.Executors
+import com.example.alphakids.ui.screens.tutor.games.WordStorage
 
-// 🚨 ¡CLASE DE ANALISIS FALTANTE! Asumo que tienes una clase TextAnalyzer,
-// si no, este código FALLARÁ. La incluyo aquí solo como plantilla.
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -74,6 +73,7 @@ fun CameraOCRScreen(
     // --- ESTADO DE LÓGICA ---
     var detectedText by remember { mutableStateOf("") }
     var isWordCompleted by remember { mutableStateOf(false) } // Clave para detener el timer/OCR
+    var isNavigating by remember { mutableStateOf(false) }
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
 
     // --- ESTADO DE UI ---
@@ -99,6 +99,17 @@ fun CameraOCRScreen(
     }
     val executor = remember { Executors.newSingleThreadExecutor() }
 
+    suspend fun safeReleaseCamera(delayMs: Long = 300L) {
+        try {
+            cameraController.unbind()
+        } catch (e: Exception) {
+            Log.e("CameraOCR", "Error al liberar cámara: ${e.message}")
+        }
+        try {
+            executor.shutdownNow()
+        } catch (_: Exception) { }
+        delay(delayMs)
+    }
     // --- LÓGICA DE INICIALIZACIÓN Y LIBERACIÓN ---
 
     // Inicializar TTS
@@ -154,25 +165,32 @@ fun CameraOCRScreen(
         val cleanDetectedText = detectedText.trim().uppercase()
         val cleanTargetWord = targetWord.trim().uppercase()
 
-        if (!isWordCompleted && cleanDetectedText.contains(cleanTargetWord) && cleanTargetWord.isNotEmpty()) {
-            isWordCompleted = true // Detiene el timer y previene doble navegación
-            //tts?.speak("¡Bien hecho! La palabra es $targetWord", TextToSpeech.QUEUE_FLUSH, null, null)
+        if (!isWordCompleted &&
+            !isNavigating &&
+            cleanTargetWord.isNotEmpty() &&
+            cleanDetectedText.contains(cleanTargetWord)
+        ) {
+            isWordCompleted = true
+            isNavigating = true
 
-            // Inicia corutina para apagar cámara Y LUEGO navegar
+            WordStorage.saveCompletedWord(context, targetWord, assignmentId)
+
+            tts?.speak("¡Bien hecho! La palabra es $targetWord",
+                TextToSpeech.QUEUE_FLUSH, null, null)
+
             scope.launch {
-                try {
-                    // 🚨 Desvinculamos la cámara explícitamente antes de navegar
-                    cameraController.unbind()
-                } catch (e: Exception) {
-                    Log.e("CameraOCR", "Error al desvincular cámara (ganar): ${e.message}")
-                }
-                delay(200) // Pequeña pausa para que la cámara se libere
-                withContext(Dispatchers.Main) { // Navega en el hilo principal
-                    // 🚨 Incluimos studentId en la navegación
-                    onWordCompleted(targetWord, targetImageUrl, studentId)
+                withContext(Dispatchers.IO) { safeReleaseCamera() }
+                withContext(Dispatchers.Main) {
+                    try {
+                        onWordCompleted(targetWord, targetImageUrl, studentId) // ✅ añadí studentId
+                    } catch (e: Exception) {
+                        Log.e("CameraOCR", "Error onWordCompleted: ${e.message}")
+                        isNavigating = false
+                    }
                 }
             }
         }
+
     }
 
 
@@ -191,6 +209,7 @@ fun CameraOCRScreen(
         // LÓGICA DE TIEMPO AGOTADO
         if (!isWordCompleted && remainingMillis <= 0) {
             isWordCompleted = true // Marca como completado para evitar doble navegación
+            onTimeExpired(targetImageUrl, studentId)
 
             // Inicia corutina para apagar cámara Y LUEGO navegar
             scope.launch {

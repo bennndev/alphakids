@@ -154,18 +154,27 @@ private fun AssignedWordsList(
 ) {
     val context = LocalContext.current
 
-    // Cargar palabras completadas
+    // 🧠 Estado con palabras completadas
     var completedSet by remember { mutableStateOf<Set<String>>(emptySet()) }
 
+    // 🔁 Actualiza reactivamente cada vez que el usuario completa una palabra
     LaunchedEffect(Unit) {
-        completedSet = WordHistoryStorage
-            .getCompletedWords(context)
-            .map { it.word.trim().uppercase() }
-            .toSet()
+        while (true) {
+            completedSet = WordStorage
+                .getCompletedWords(context)
+                .map { it.word.trim().uppercase() }
+                .toSet()
+            kotlinx.coroutines.delay(1000) // refresca cada segundo
+        }
     }
 
-    // Filtrar solo las palabras pendientes
-    val pendingAssignments = assignedWords.filter { assignment ->
+    // ✨ 1. Evitar duplicados
+    val uniqueAssignments = assignedWords.distinctBy {
+        it.palabraTexto?.trim()?.uppercase()
+    }
+
+    // ✨ 2. Filtrar las completadas
+    val pendingAssignments = uniqueAssignments.filter { assignment ->
         val word = (assignment.palabraTexto ?: "").trim().uppercase()
         word !in completedSet
     }
@@ -175,7 +184,7 @@ private fun AssignedWordsList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(assignedWords) { assignment ->
+        items(pendingAssignments) { assignment ->
             AssignedWordCard(
                 assignment = assignment,
                 onClick = { onWordClick(assignment) }
@@ -183,6 +192,7 @@ private fun AssignedWordsList(
         }
     }
 }
+
 
 @Composable
 fun AssignedWordCard(
