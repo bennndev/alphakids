@@ -1,5 +1,6 @@
 package com.example.alphakids.navigation
 
+import android.util.Log
 import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -50,6 +51,8 @@ import com.example.alphakids.ui.screens.tutor.pets.StudentPetDetailScreen
 import com.example.alphakids.ui.screens.profile.EditProfileScreen
 
 import androidx.compose.material.icons.rounded.Warning
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 
 
 @Composable
@@ -234,7 +237,7 @@ fun AppNavHost(
         }
 
         composable(
-            Routes.WORD_PUZZLE,
+            route = Routes.WORD_PUZZLE,
             arguments = listOf(navArgument("assignmentId") { type = NavType.StringType })
         ) { entry ->
             val assignmentId = entry.arguments?.getString("assignmentId") ?: ""
@@ -252,25 +255,36 @@ fun AppNavHost(
             WordPuzzleScreen(
                 assignmentId = assignmentId,
                 onBackClick = { navController.popBackStack() },
-                onTakePhotoClick = {
-                    val targetWord = uiState.assignment?.palabraTexto ?: ""
-                    if (targetWord.isNotEmpty()) {
-                        navController.navigate(Routes.cameraOCRRoute(assignmentId, targetWord))
-                    }
-                }
+                navController = navController
             )
         }
 
+
         composable(
-            Routes.CAMERA_OCR,
+            route = Routes.CAMERA_OCR + "?imageUrl={imageUrl}",
             arguments = listOf(
                 navArgument("assignmentId") { type = NavType.StringType },
-                navArgument("targetWord") { type = NavType.StringType }
+                navArgument("targetWord") { type = NavType.StringType },
+                navArgument("imageUrl") {
+                    type = NavType.StringType
+                    nullable = true
+                }
             )
         ) { entry ->
+
+            val encodedUrl = entry.arguments?.getString("imageUrl")
+            val imageUrl = encodedUrl?.let {
+                URLDecoder.decode(it, StandardCharsets.UTF_8.name())
+            }
+
+            // --- ¡¡AÑADE ESTE LOG!! ---
+            Log.d("DebugImagen", "PASO 2 (NAVHOST): ¿URL recibida y decodificada? URL = $imageUrl")
+            // ----------------------------
+
             CameraOCRScreen(
                 assignmentId = entry.arguments?.getString("assignmentId") ?: "",
                 targetWord = entry.arguments?.getString("targetWord") ?: "",
+                targetImageUrl = imageUrl,
                 onBackClick = { navController.popBackStack() },
                 onWordCompleted = { navController.popBackStack() }
             )
