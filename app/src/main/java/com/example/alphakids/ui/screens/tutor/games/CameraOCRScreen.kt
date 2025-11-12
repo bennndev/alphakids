@@ -2,6 +2,7 @@ package com.example.alphakids.ui.screens.tutor.games
 
 import android.Manifest
 import android.content.Context
+import android.media.MediaPlayer
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.camera.core.*
@@ -9,7 +10,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.*
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -22,7 +22,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -37,13 +36,49 @@ import com.example.alphakids.ui.theme.dmSansFamily
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.*
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import kotlin.Exception
+
+// 🔊 URLs de audio desde Firebase Storage (¡REEMPLAZA EL TOKEN DE FALLO!)
+private const val AUDIO_EXITO_URL = "https://firebasestorage.googleapis.com/v0/b/alphakids-tecsup.firebasestorage.app/o/audio_exito.mp3?alt=media&token=d484c88c-255e-4f41-a638-04da263d476a"
+private const val AUDIO_FALLO_URL = "https://firebasestorage.googleapis.com/v0/b/alphakids-tecsup.firebasestorage.app/o/audio_fallo.mp3?alt=media&token=EL_TOKEN_DE_FALLO" // ⚠️ ¡REEMPLAZAR ESTE TOKEN!
+
+// 🔊 Variable Singleton para controlar el audio
+private var audioPlayer: MediaPlayer? = null
+
+/**
+ * Función para reproducir el audio desde una URL, controlando el ciclo de vida del MediaPlayer.
+ */
+fun playAudioFromUrl(url: String) {
+    // 1. Detener y liberar el reproductor anterior si existe
+    audioPlayer?.release()
+    audioPlayer = null
+
+    // 2. Crear nueva instancia
+    audioPlayer = MediaPlayer().apply {
+        try {
+            setDataSource(url)
+
+            setOnPreparedListener {
+                it.start()
+            }
+
+            setOnCompletionListener {
+                it.release() // Libera los recursos al terminar
+                audioPlayer = null // Restablece la variable
+            }
+
+            prepareAsync() // Esencial para URLs
+        } catch (e: Exception) {
+            Log.e("AudioPlayer", "Error al configurar o reproducir audio: ${e.message}")
+            audioPlayer = null
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -57,6 +92,7 @@ fun CameraOCRScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
+    val coroutineScope = rememberCoroutineScope() // Para las coroutines de fallo/éxito
 
     var previewView by remember { mutableStateOf<PreviewView?>(null) }
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
@@ -64,7 +100,10 @@ fun CameraOCRScreen(
     var showSuccessAnimation by remember { mutableStateOf(false) }
     var isWordCompleted by remember { mutableStateOf(false) }
 
-    // TTS Setup
+    // Bandera para limitar la reproducción del audio de fallo (EVITA REPETICIÓN CONTINUA)
+    var isFailurePlayed by remember { mutableStateOf(false) }
+
+    // TTS Setup (se mantiene por si necesitas la voz en el futuro)
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
 
     LaunchedEffect(Unit) {
@@ -79,29 +118,52 @@ fun CameraOCRScreen(
     DisposableEffect(Unit) {
         onDispose {
             tts?.shutdown()
+            audioPlayer?.release() // 🔊 Asegura liberar el MediaPlayer al salir
         }
     }
 
-    // Check for word completion
+    // Lógica principal: Check de palabra completada y manejo de audios
     LaunchedEffect(detectedText, targetWord) {
-        if (!isWordCompleted && detectedText.trim().uppercase() == targetWord.trim().uppercase()) {
+        val detected = detectedText.trim().uppercase()
+        val target = targetWord.trim().uppercase()
+
+        // 1. Lógica de Éxito
+        if (!isWordCompleted && detected == target) {
             isWordCompleted = true
             showSuccessAnimation = true
+            isFailurePlayed = false // Reinicia la bandera de fallo
 
-            // Play TTS
-            tts?.speak(
-                "¡Bien hecho! La palabra es $targetWord",
-                TextToSpeech.QUEUE_FLUSH,
-                null,
-                null
-            )
+            // 🔊 Reproducir audio de éxito
+            playAudioFromUrl(AUDIO_EXITO_URL)
+
+            // Play TTS (opcional)
+
 
             // Save to storage
-            WordHistoryStorage.saveCompletedWord(context, targetWord)
+            // WordHistoryStorage.saveCompletedWord(context, targetWord) // Asegúrate de tener esta clase
 
-            // Hide animation after 3 seconds and complete
+            // Ocultar animación y completar
             delay(3000)
             onWordCompleted()
+
+            // 2. Lógica de Fallo (detecta texto, pero no es el correcto)
+        } else if (!isWordCompleted && detected.length >= 3 && detected != target) {
+
+            if (!isFailurePlayed) {
+                isFailurePlayed = true // Activa la bandera para evitar repetición
+
+                // 🔊 Reproducir audio de fallo
+                playAudioFromUrl(AUDIO_FALLO_URL)
+
+                // Después de 2 segundos, permite que el audio de fallo se reproduzca de nuevo
+                delay(2000)
+                isFailurePlayed = false
+            }
+        }
+
+        // 3. Reiniciar bandera de fallo si no hay texto detectado
+        if (detected.isEmpty()) {
+            isFailurePlayed = false
         }
     }
 
@@ -125,21 +187,17 @@ fun CameraOCRScreen(
             ) {
                 val canvasWidth = size.width
                 val canvasHeight = size.height
-
-                // Define ROI dimensions (centered rectangle)
                 val roiWidth = canvasWidth * 0.8f
                 val roiHeight = canvasHeight * 0.3f
                 val roiLeft = (canvasWidth - roiWidth) / 2
                 val roiTop = (canvasHeight - roiHeight) / 2
 
-                // Draw semi-transparent overlay
                 drawRect(
                     color = Color.Black.copy(alpha = 0.5f),
                     topLeft = Offset.Zero,
                     size = size
                 )
 
-                // Clear the ROI area
                 drawRect(
                     color = Color.Transparent,
                     topLeft = Offset(roiLeft, roiTop),
@@ -147,7 +205,6 @@ fun CameraOCRScreen(
                     blendMode = androidx.compose.ui.graphics.BlendMode.Clear
                 )
 
-                // Draw ROI border
                 drawRect(
                     color = Color.Green,
                     topLeft = Offset(roiLeft, roiTop),
@@ -281,7 +338,6 @@ fun CameraOCRScreen(
         }
     }
 }
-
 
 
 private fun setupCamera(
