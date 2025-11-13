@@ -3,11 +3,12 @@ package com.example.alphakids.ui.screens.tutor.games
 import ScannerOverlay
 import android.Manifest
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.MediaPlayer
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.FocusMeteringAction
-import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.MeteringPoint
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
@@ -47,41 +48,63 @@ import java.util.*
 import java.util.concurrent.Executors
 import com.example.alphakids.ui.screens.tutor.games.WordStorage
 import com.example.alphakids.ui.utils.MusicManager
-import android.media.MediaPlayer
+import com.example.alphakids.ui.utils.AUDIO_TIMEOUT_URL // ✅ Import correcto aquí
+import java.lang.Exception
 
 // 🔊 URLs de audio desde Firebase Storage
-private const val AUDIO_EXITO_URL =
-    "https://firebasestorage.googleapis.com/v0/b/alphakids-tecsup.firebasestorage.app/o/audio_exito.mp3?alt=media&token=d484c88c-253e-4f41-a638-04da263d476a"
+const val AUDIO_EXITO_URL =
+    "https://firebasestorage.googleapis.com/v0/b/alphakids-tecsup.firebasestorage.app/o/audio_exito.mp3?alt=media&token=8fd13d76-d100-4bff-9490-35a02138599d"
 
-private const val AUDIO_FALLO_URL =
+const val AUDIO_FALLO_URL =
     "https://firebasestorage.googleapis.com/v0/b/alphakids-tecsup.firebasestorage.app/o/audio_fallo.mp3?alt=media&token=EL_TOKEN_DE_FALLO"
 
 // 🔊 MediaPlayer para efectos
-private var sfxPlayer: MediaPlayer? = null
+var sfxPlayer: MediaPlayer? = null
 
-// 🔊 Función para reproducir efectos de sonido con control de volumen
-fun playSfxAudioFromUrl(context: Context, url: String) {
+// ----------------------------------------------------------------------
+// 🔊 Implementación CORRECTA de MediaPlayer para SFX
+// ----------------------------------------------------------------------
+fun playSfxAudioFromUrl(context: Context, url: String, onCompletion: () -> Unit = {}) {
     try {
-        // 🔇 BAJAR volumen mientras suena el efecto
+        // 🔇 Bajar volumen mientras suena el efecto
         MusicManager.setAppVolume(0.05f)
         MusicManager.setJuegoVolume(0.05f)
 
+        // Liberar cualquier reproductor anterior antes de crear uno nuevo
         sfxPlayer?.release()
         sfxPlayer = MediaPlayer().apply {
+            setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                    .build()
+            )
             setDataSource(url)
-            setOnPreparedListener { it.start() }
-            setOnCompletionListener {
-                it.release()
-                sfxPlayer = null
 
-                // 🔊 RESTAURAR volumen normal
+            setOnPreparedListener { it.start() }
+
+            setOnCompletionListener { mp ->
+                mp.release()
+                sfxPlayer = null
+                // 🔊 Restaurar volumen normal
                 MusicManager.setAppVolume(1f)
                 MusicManager.setJuegoVolume(1f)
+                onCompletion()
+            }
+
+            setOnErrorListener { mp, _, _ ->
+                mp.release()
+                sfxPlayer = null
+                MusicManager.setAppVolume(1f)
+                MusicManager.setJuegoVolume(1f)
+                true
             }
             prepareAsync()
         }
     } catch (e: Exception) {
         Log.e("AudioPlayer", "Error al reproducir SFX: ${e.message}")
+        MusicManager.setAppVolume(1f)
+        MusicManager.setJuegoVolume(1f)
     }
 }
 
@@ -100,7 +123,6 @@ fun CameraOCRScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
 
-    // --- ESTADOS ---
     var detectedText by remember { mutableStateOf("") }
     var isWordCompleted by remember { mutableStateOf(false) }
     var isNavigating by remember { mutableStateOf(false) }
@@ -117,8 +139,8 @@ fun CameraOCRScreen(
     var remainingMillis by remember { mutableStateOf(totalMillis) }
     var progress by remember { mutableStateOf(0f) }
     var isWarning by remember { mutableStateOf(false) }
+    var hasWarningSoundPlayed by remember { mutableStateOf(false) }
 
-    // Controlador de cámara
     val cameraController = remember {
         LifecycleCameraController(context).apply {
             setEnabledUseCases(CameraController.IMAGE_ANALYSIS)
@@ -127,31 +149,24 @@ fun CameraOCRScreen(
     }
     val executor = remember { Executors.newSingleThreadExecutor() }
 
-    // Libera cámara seguro
     suspend fun safeReleaseCamera(delayMs: Long = 300L) {
-        try {
-            cameraController.unbind()
-        } catch (_: Exception) { }
-        try {
-            executor.shutdownNow()
-        } catch (_: Exception) { }
+        try { cameraController.unbind() } catch (_: Exception) { }
+        try { executor.shutdownNow() } catch (_: Exception) { }
         delay(delayMs)
     }
 
-    // Inicializar TTS + Música del juego
     LaunchedEffect(Unit) {
+        MusicManager.pauseMusicaApp()
+        MusicManager.startMusicaJuego(context)
+
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts?.language = Locale("es", "ES")
                 tts?.setSpeechRate(0.9f)
-
-                MusicManager.pauseMusicaApp()
-                MusicManager.startMusicaJuego(context)
             }
         }
     }
 
-    // onDispose: liberar audio/cámara
     DisposableEffect(Unit) {
         onDispose {
             try {
@@ -162,17 +177,16 @@ fun CameraOCRScreen(
             } catch (_: Exception) {}
 
             sfxPlayer?.release()
+            sfxPlayer = null
             MusicManager.stopMusicaJuego()
             MusicManager.resumeMusicaApp()
         }
     }
 
-    // Vincular cámara
     LaunchedEffect(lifecycleOwner) {
         cameraController.bindToLifecycle(lifecycleOwner)
     }
 
-    // OCR Analyzer
     LaunchedEffect(cameraController, targetWord) {
         val textAnalyzer = TextAnalyzer(
             targetWord = targetWord,
@@ -185,7 +199,7 @@ fun CameraOCRScreen(
         cameraController.setImageAnalysisAnalyzer(executor, textAnalyzer)
     }
 
-    // --- LÓGICA DE ÉXITO ---
+    // 🏆 Lógica de éxito
     LaunchedEffect(detectedText, targetWord) {
         val cleanDetectedText = detectedText.trim().uppercase()
         val cleanTarget = targetWord.trim().uppercase()
@@ -199,49 +213,43 @@ fun CameraOCRScreen(
 
             WordStorage.saveCompletedWord(context, targetWord, assignmentId)
 
-            // 🔊 Sonido de éxito
-            MusicManager.stopMusicaJuego()
-            playSfxAudioFromUrl(context, AUDIO_EXITO_URL)
-
             scope.launch {
                 withContext(Dispatchers.IO) { safeReleaseCamera() }
                 withContext(Dispatchers.Main) {
-
-                    delay(1200) // esperar a que el sonido termine
-
-                    MusicManager.resumeMusicaApp()
-
+                    MusicManager.stopMusicaJuego()
                     onWordCompleted(targetWord, targetImageUrl, studentId)
                 }
             }
         }
     }
 
-    // --- LÓGICA DE PERDER ---
+    // ⏰ Lógica de perder (usa AUDIO_TIMEOUT_URL)
     LaunchedEffect(isWordCompleted) {
         while (remainingMillis > 0 && !isWordCompleted) {
             delay(1000)
-
             if (!isWordCompleted) {
                 remainingMillis -= 1000
                 progress = 1f - (remainingMillis.toFloat() / totalMillis)
                 isWarning = remainingMillis <= 10_000L
 
-                // Reproduce fallo SOLO en los últimos 10s
-                if (isWarning) {
-                    playSfxAudioFromUrl(context, AUDIO_FALLO_URL)
+                if (isWarning && !hasWarningSoundPlayed) {
+                    playSfxAudioFromUrl(context, AUDIO_TIMEOUT_URL)
+                    hasWarningSoundPlayed = true
                 }
             }
         }
 
         if (!isWordCompleted && remainingMillis <= 0) {
             isWordCompleted = true
-            onTimeExpired(targetImageUrl, studentId)
+            isNavigating = true
 
             scope.launch {
-                try { cameraController.unbind() } catch (_: Exception) {}
-                delay(200)
-                onTimeExpired(targetImageUrl, studentId)
+                withContext(Dispatchers.IO) { safeReleaseCamera() }
+                withContext(Dispatchers.Main) {
+                    MusicManager.stopMusicaJuego()
+                    MusicManager.resumeMusicaApp()
+                    onTimeExpired(targetImageUrl, studentId)
+                }
             }
         }
     }
@@ -257,7 +265,6 @@ fun CameraOCRScreen(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-
         if (cameraPermissionState.status == PermissionStatus.Granted) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
@@ -275,11 +282,7 @@ fun CameraOCRScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    "Se necesita permiso de cámara",
-                    color = Color.White,
-                    fontFamily = dmSansFamily
-                )
+                Text("Se necesita permiso de cámara", color = Color.White, fontFamily = dmSansFamily)
                 Spacer(Modifier.height(16.dp))
                 Button(onClick = { cameraPermissionState.launchPermissionRequest() }) {
                     Text("Conceder Permiso")
@@ -287,22 +290,6 @@ fun CameraOCRScreen(
             }
         }
 
-        // Enfoque automático
-        LaunchedEffect(roiRect, previewViewRef.value) {
-            val pv = previewViewRef.value
-            val rect = roiRect
-            if (pv != null && rect != null && pv.width > 0) {
-                val cx = ((rect[0] + rect[2]) / 2f) * pv.width
-                val cy = ((rect[1] + rect[3]) / 2f) * pv.height
-                val point = pv.meteringPointFactory.createPoint(cx, cy)
-                val action = FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AF)
-                    .addPoint(point, FocusMeteringAction.FLAG_AE)
-                    .build()
-                try { cameraController.cameraControl?.startFocusAndMetering(action) } catch (_: Exception) {}
-            }
-        }
-
-        // Overlay del escáner
         ScannerOverlay(
             modifier = Modifier.fillMaxSize(),
             boxWidthPercent = 0.8f,
@@ -312,7 +299,6 @@ fun CameraOCRScreen(
             }
         )
 
-        // Top Bar + Notificación
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -321,11 +307,7 @@ fun CameraOCRScreen(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBackClick) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Atrás",
-                        tint = Color.White
-                    )
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = Color.White)
                 }
                 Spacer(Modifier.width(16.dp))
                 TimerBar(
@@ -348,7 +330,6 @@ fun CameraOCRScreen(
             }
         }
 
-        // Barra inferior
         CameraActionBar(
             modifier = Modifier.align(Alignment.BottomCenter),
             onFlashClick = {
@@ -364,16 +345,13 @@ fun CameraOCRScreen(
             }
         )
 
-        // Texto detectado
         if (detectedText.isNotEmpty() && !isWordCompleted) {
             Card(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 120.dp)
                     .padding(horizontal = 24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.Black.copy(alpha = 0.7f)
-                )
+                colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.7f))
             ) {
                 Text(
                     "Detectado: $detectedText",

@@ -9,11 +9,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -24,20 +25,30 @@ import com.example.alphakids.ui.components.ErrorTonalButton
 import com.example.alphakids.ui.components.IconContainer
 import com.example.alphakids.ui.theme.AlphakidsTheme
 import com.example.alphakids.ui.theme.dmSansFamily
+import com.example.alphakids.ui.utils.MusicManager
 
-/**
- * Pantalla completa que muestra que el tiempo se agotó.
- *
- * @param imageUrl La URL de la imagen asociada a la palabra (opcional).
- * @param onRetryClick Lambda para navegar de vuelta al puzzle (ej. WordPuzzleScreen).
- * @param onExitClick Lambda para navegar de vuelta al menú principal (ej. StudentHomeScreen).
- */
 @Composable
 fun GameFailureScreen(
     imageUrl: String?,
     onRetryClick: () -> Unit,
     onExitClick: () -> Unit
 ) {
+    val context = LocalContext.current
+
+    // --- Reproducir audio de fallo correctamente usando los métodos de MusicManager ---
+    LaunchedEffect(Unit) {
+        MusicManager.pauseMusicaApp()
+        MusicManager.startMusicaFallo(context)
+    }
+
+    // --- Cuando el Composable se destruye, restauramos música global ---
+    DisposableEffect(Unit) {
+        onDispose {
+            MusicManager.stopMusicaFallo()
+            MusicManager.resumeMusicaApp()
+        }
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surfaceVariant
     ) { paddingValues ->
@@ -49,7 +60,6 @@ fun GameFailureScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Contenido de fallo adaptado del GameResultDialog
             FailureContent(
                 imageUrl = imageUrl,
                 onPrimaryAction = onRetryClick,
@@ -72,7 +82,6 @@ private fun FailureContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(40.dp)
     ) {
-        // --- Título ---
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -84,7 +93,7 @@ private fun FailureContent(
                 tint = MaterialTheme.colorScheme.error
             )
             Text(
-                text = "¡Se acabó el tiempo!", // <-- Mensaje personalizado
+                text = "¡Se acabó el tiempo!",
                 fontFamily = dmSansFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 32.sp,
@@ -92,12 +101,10 @@ private fun FailureContent(
             )
         }
 
-        // --- Imagen ---
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Usamos AsyncImage para mostrar la imagen de la URL
             if (imageUrl != null) {
                 AsyncImage(
                     model = imageUrl,
@@ -108,7 +115,6 @@ private fun FailureContent(
                     contentScale = ContentScale.Crop
                 )
             } else {
-                // Fallback si no hay imagen (como en el Dialog)
                 IconContainer(
                     icon = Icons.Rounded.Checkroom,
                     contentDescription = "Palabra",
@@ -125,14 +131,13 @@ private fun FailureContent(
             )
         }
 
-        // --- Botones de Acción ---
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             ErrorButton(
-                text = "Reintentar", // <-- Texto del botón
+                text = "Reintentar",
                 onClick = onPrimaryAction,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -150,11 +155,9 @@ private fun FailureContent(
 fun GameFailureScreenPreview() {
     AlphakidsTheme {
         GameFailureScreen(
-            imageUrl = null, // Probar sin imagen
+            imageUrl = null,
             onRetryClick = {},
             onExitClick = {}
         )
     }
 }
-
-

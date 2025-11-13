@@ -1,6 +1,6 @@
 package com.example.alphakids.ui.screens.tutor.games
 
-import androidx.compose.foundation.background
+import android.media.MediaPlayer
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,11 +9,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Checkroom
 import androidx.compose.material.icons.rounded.SentimentSatisfied
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -25,14 +27,19 @@ import com.example.alphakids.ui.components.PrimaryButton
 import com.example.alphakids.ui.components.PrimaryTonalButton
 import com.example.alphakids.ui.theme.AlphakidsTheme
 import com.example.alphakids.ui.theme.dmSansFamily
+import com.example.alphakids.ui.utils.MusicManager
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.IOException
+
+// ----------------------------------------------------------------------
+// ✅ IMPORTACIONES DE AUDIO (Necesarias para el audio de éxito)
+// ----------------------------------------------------------------------
+import com.example.alphakids.ui.screens.tutor.games.AUDIO_EXITO_URL
 
 /**
  * Pantalla completa que muestra el resultado exitoso de un juego.
- *
- * @param word La palabra que el usuario completó.
- * @param imageUrl La URL de la imagen asociada a la palabra (opcional).
- * @param onContinueClick Lambda para navegar a la siguiente actividad (ej. AssignedWordsScreen).
- * @param onBackClick Lambda para navegar de vuelta al menú principal (ej. StudentHomeScreen).
  */
 @Composable
 fun GameResultScreen(
@@ -41,6 +48,52 @@ fun GameResultScreen(
     onContinueClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+
+    // 🎵 CONTROL DE MÚSICA Y AUDIO
+    LaunchedEffect(Unit) {
+        // 🛑 Detenemos toda música activa
+        MusicManager.stopMusicaJuego()
+        MusicManager.pauseMusicaApp()
+        delay(500) // pequeño margen para liberar recursos
+
+        // 🎶 Reproducir el audio de éxito con su propio MediaPlayer independiente
+        withContext(Dispatchers.IO) {
+            try {
+                val player = MediaPlayer().apply {
+                    setDataSource(AUDIO_EXITO_URL)
+                    setOnPreparedListener { it.start() }
+                    setOnCompletionListener {
+                        it.release()
+                    }
+                    setOnErrorListener { mp, what, extra ->
+                        mp.release()
+                        true
+                    }
+                    prepareAsync()
+                }
+                mediaPlayer = player
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    // 🔄 Cuando el usuario salga de esta pantalla...
+    DisposableEffect(lifecycleOwner) {
+        onDispose {
+            try {
+                mediaPlayer?.stop()
+                mediaPlayer?.release()
+            } catch (_: Exception) {
+            }
+            mediaPlayer = null
+            MusicManager.resumeMusicaApp() // 🔊 Reanudar música global
+        }
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surfaceVariant
     ) { paddingValues ->
@@ -53,7 +106,6 @@ fun GameResultScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Contenido de éxito adaptado del GameResultDialog
             SuccessContent(
                 word = word,
                 imageUrl = imageUrl,
@@ -103,7 +155,6 @@ private fun SuccessContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Adaptado de WordPuzzleCard para mostrar la imagen de la URL
             if (imageUrl != null) {
                 AsyncImage(
                     model = imageUrl,
@@ -114,9 +165,8 @@ private fun SuccessContent(
                     contentScale = ContentScale.Crop
                 )
             } else {
-                // Fallback si no hay imagen (como en el Dialog)
                 IconContainer(
-                    icon = Icons.Rounded.Checkroom, // Icono de fallback
+                    icon = Icons.Rounded.Checkroom,
                     contentDescription = "Palabra"
                 )
             }
@@ -158,10 +208,9 @@ fun GameResultScreenPreview() {
     AlphakidsTheme {
         GameResultScreen(
             word = "GATO",
-            imageUrl = null, // Probar sin imagen
+            imageUrl = null,
             onContinueClick = {},
             onBackClick = {}
         )
     }
 }
-
