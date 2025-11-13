@@ -43,7 +43,7 @@ import kotlin.Exception
 private const val AUDIO_EXITO_URL =
     "https://firebasestorage.googleapis.com/v0/b/alphakids-tecsup.firebasestorage.app/o/audio_exito.mp3?alt=media&token=d484c88c-253e-4f41-a638-04da263d476a"
 private const val AUDIO_FALLO_URL =
-    "https://firebasestorage.googleapis.com/v0/b/alphakids-tecsup.firebasestorage.app/o/audio_fallo.mp3?alt=media&token=EL_TOKEN_DE_FALLO"
+    "https://firebasestorage.googleapis.com/v0/b/alphakids-tecsup.firebasestorage.app/o/audio_fallo.mp3?alt=media&token=bd92cf80-ac33-494f-aac3-bb252369cfb9"
 
 // 🔊 Control de efectos
 private var sfxPlayer: android.media.MediaPlayer? = null
