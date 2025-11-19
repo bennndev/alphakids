@@ -472,6 +472,9 @@ fun AssignWordScreen(
                             imageUrl = word.imagenUrl,
                             onClickAssign = {
                                 viewModel.createAssignment(word)
+                            },
+                            onClickAssignAll = {
+                                viewModel.createAssignmentForAll(word)
                             }
                         )
                     }

@@ -133,6 +133,43 @@ class AssignWordViewModel @Inject constructor(
         }
     }
 
+    fun createAssignmentForAll(word: Word) {
+        viewModelScope.launch {
+            _uiState.value = AssignmentUiState.Loading
+
+            val docente = getCurrentUserUseCase().firstOrNull()
+            val allStudents = students.value
+
+            if (docente == null || allStudents.isEmpty()) {
+                _uiState.value = AssignmentUiState.Error("No hay estudiantes disponibles o falta el usuario.")
+                return@launch
+            }
+
+            var success = 0
+            var failed = 0
+            allStudents.forEach { student ->
+                val assignment = WordAssignment(
+                    id = "",
+                    idDocente = docente.uid,
+                    idEstudiante = student.id,
+                    idPalabra = word.id,
+                    palabraTexto = word.texto,
+                    palabraImagenUrl = word.imagenUrl,
+                    palabraAudioUrl = word.audioUrl,
+                    palabraDificultad = word.nivelDificultad,
+                    estudianteNombre = student.nombre,
+                    fechaAsignacionMillis = null,
+                    fechaLimiteMillis = null,
+                    estado = "PENDIENTE"
+                )
+                val result = createAssignmentUseCase(assignment)
+                if (result.isSuccess) success++ else failed++
+            }
+
+            _uiState.value = AssignmentUiState.Success("Palabra asignada a $success estudiantes${if (failed > 0) " ($failed con error)" else ""}.")
+        }
+    }
+
     fun resetUiState() {
         _uiState.value = AssignmentUiState.Idle
     }

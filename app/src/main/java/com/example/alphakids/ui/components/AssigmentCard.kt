@@ -26,7 +26,8 @@ fun AssignmentCard(
     wordSubtitle: String,
     chipText: String,
     imageUrl: String? = null,
-    onClickAssign: () -> Unit
+    onClickAssign: () -> Unit,
+    onClickAssignAll: (() -> Unit)? = null
 ) {
     val shape = RoundedCornerShape(28.dp)
     // Se eliminó la variable 'totalHeight' y la restricción 'height(totalHeight)'
@@ -58,6 +59,15 @@ fun AssignmentCard(
             icon = Icons.Rounded.Add,
             onClick = onClickAssign
         )
+
+        if (onClickAssignAll != null) {
+            PrimaryButton(
+                modifier = Modifier.fillMaxWidth(),
+                text = "Asignar a todos",
+                icon = Icons.Rounded.Add,
+                onClick = onClickAssignAll
+            )
+        }
     }
 }
 
@@ -71,7 +81,8 @@ fun AssignmentCardPreview() {
                 wordSubtitle = "Categoría",
                 chipText = "Chip",
                 imageUrl = null,
-                onClickAssign = {}
+                onClickAssign = {},
+                onClickAssignAll = {}
             )
         }
     }
