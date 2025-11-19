@@ -135,6 +135,11 @@ fun CameraOCRScreen(
     var roiRect by remember { mutableStateOf<FloatArray?>(null) }
     var showNotification by remember { mutableStateOf(true) }
 
+    var isCountdownRunning by remember { mutableStateOf(true) }
+    var isCountdownFinished by remember { mutableStateOf(false) }
+    var countdownIndex by remember { mutableStateOf(0) }
+    val countdownSequence = listOf("3", "2", "1", "¡Empieza!")
+
     val totalMillis = 60_000L
     var remainingMillis by remember { mutableStateOf(totalMillis) }
     var progress by remember { mutableStateOf(0f) }
@@ -167,6 +172,15 @@ fun CameraOCRScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        countdownSequence.forEachIndexed { i, _ ->
+            countdownIndex = i
+            delay(800)
+        }
+        isCountdownRunning = false
+        isCountdownFinished = true
+    }
+
     DisposableEffect(Unit) {
         onDispose {
             try {
@@ -187,16 +201,18 @@ fun CameraOCRScreen(
         cameraController.bindToLifecycle(lifecycleOwner)
     }
 
-    LaunchedEffect(cameraController, targetWord) {
-        val textAnalyzer = TextAnalyzer(
-            targetWord = targetWord,
-            onTextDetected = { text ->
-                scope.launch(Dispatchers.Main) {
-                    detectedText = text
+    LaunchedEffect(cameraController, targetWord, isCountdownFinished) {
+        if (isCountdownFinished) {
+            val textAnalyzer = TextAnalyzer(
+                targetWord = targetWord,
+                onTextDetected = { text ->
+                    scope.launch(Dispatchers.Main) {
+                        detectedText = text
+                    }
                 }
-            }
-        )
-        cameraController.setImageAnalysisAnalyzer(executor, textAnalyzer)
+            )
+            cameraController.setImageAnalysisAnalyzer(executor, textAnalyzer)
+        }
     }
 
     // 🏆 Lógica de éxito
@@ -224,7 +240,8 @@ fun CameraOCRScreen(
     }
 
     // ⏰ Lógica de perder (usa AUDIO_TIMEOUT_URL)
-    LaunchedEffect(isWordCompleted) {
+    LaunchedEffect(isCountdownFinished, isWordCompleted) {
+        if (!isCountdownFinished) return@LaunchedEffect
         while (remainingMillis > 0 && !isWordCompleted) {
             delay(1000)
             if (!isWordCompleted) {
@@ -326,6 +343,24 @@ fun CameraOCRScreen(
                     imageUrl = targetImageUrl,
                     icon = Icons.Rounded.Checkroom,
                     onCloseClick = { showNotification = false }
+                )
+            }
+        }
+
+        if (isCountdownRunning) {
+            AnimatedContent(
+                modifier = Modifier.align(Alignment.Center),
+                targetState = countdownIndex,
+                transitionSpec = {
+                    fadeIn() + scaleIn() togetherWith fadeOut() + scaleOut()
+                }
+            ) { idx ->
+                Text(
+                    text = countdownSequence[idx],
+                    fontFamily = dmSansFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 48.sp,
+                    color = Color.White
                 )
             }
         }
