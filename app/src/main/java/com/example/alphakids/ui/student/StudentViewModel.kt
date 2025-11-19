@@ -4,9 +4,13 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.alphakids.data.firebase.models.Estudiante
+import com.example.alphakids.data.firebase.models.Usuario
 import com.example.alphakids.domain.usecases.CreateStudentUseCase
 import com.example.alphakids.domain.usecases.GetCurrentUserUseCase
 import com.example.alphakids.domain.usecases.GetStudentsUseCase
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.snapshots
+import com.google.firebase.firestore.toObjects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -17,7 +21,8 @@ import javax.inject.Inject
 class StudentViewModel @Inject constructor(
     private val createStudentUseCase: CreateStudentUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val getStudentsUseCase: GetStudentsUseCase
+    private val getStudentsUseCase: GetStudentsUseCase,
+    private val firestore: FirebaseFirestore
 ) : ViewModel() {
 
     private val _createUiState = MutableStateFlow<StudentUiState>(StudentUiState.Idle)
@@ -45,6 +50,20 @@ class StudentViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
+    val docentes: StateFlow<List<Usuario>> = firestore.collection("usuarios")
+        .whereEqualTo("rol", "docente")
+        .snapshots()
+        .map { it.toObjects(Usuario::class.java) }
+        .catch { e ->
+            Log.e("StudentViewModel", "Error fetching docentes", e)
+            emit(emptyList())
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
 
     fun createStudent(
         nombre: String,
@@ -52,7 +71,8 @@ class StudentViewModel @Inject constructor(
         edad: Int,
         grado: String,
         seccion: String,
-        idInstitucion: String
+        idInstitucion: String,
+        idDocente: String?
     ) {
         viewModelScope.launch {
             _createUiState.value = StudentUiState.Loading
@@ -72,7 +92,7 @@ class StudentViewModel @Inject constructor(
                 seccion = seccion,
                 idTutor = tutorId,
                 idInstitucion = idInstitucion,
-                idDocente = "",
+                idDocente = idDocente ?: "",
                 fotoPerfil = null
             )
 

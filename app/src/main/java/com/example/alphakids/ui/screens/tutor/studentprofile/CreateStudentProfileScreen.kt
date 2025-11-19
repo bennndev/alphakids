@@ -45,14 +45,15 @@ fun CreateStudentProfileScreen(
     val instituciones = listOf("Institución A", "Institución B", "Otra")
     val grados = listOf("Inicial 3 años", "Inicial 4 años", "Inicial 5 años")
     val secciones = listOf("A", "B", "C")
-    // 1. Lista de opciones para Docentes
-    val docentes = listOf("Prof. Ana López", "Prof. Luis García", "Prof. Marta Torres")
+
+    val docentes by viewModel.docentes.collectAsState()
 
     var selectedInstitucion by remember { mutableStateOf<String?>(null) }
     var selectedGrado by remember { mutableStateOf<String?>(null) }
     var selectedSeccion by remember { mutableStateOf<String?>(null) }
-    // 2. Estado para el Docente seleccionado
-    var selectedDocente by remember { mutableStateOf<String?>(null) }
+
+    var selectedDocenteName by remember { mutableStateOf("") }
+    var selectedDocenteId by remember { mutableStateOf<String?>(null) }
 
     val uiState by viewModel.createUiState.collectAsState()
     val isLoading = uiState is StudentUiState.Loading
@@ -178,18 +179,30 @@ fun CreateStudentProfileScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- Campo Docente agregado ---
+                var docenteMenuExpanded by remember { mutableStateOf(false) }
+
                 LabeledDropdownField(
                     label = "Docente",
-                    selectedOption = selectedDocente ?: "",
+                    selectedOption = selectedDocenteName,
                     placeholderText = "Selecciona docente (Opcional)",
-                    onClick = { /* TODO: Mostrar menú dropdown real */
-                        // En un caso real, aquí usarías una función para actualizar selectedDocente
-                        selectedDocente = docentes.firstOrNull() // Simulación de selección
-                    }
+                    onClick = { docenteMenuExpanded = true }
                 )
+                DropdownMenu(
+                    expanded = docenteMenuExpanded,
+                    onDismissRequest = { docenteMenuExpanded = false }
+                ) {
+                    docentes.forEach { usuario ->
+                        DropdownMenuItem(
+                            text = { Text(text = "${usuario.nombre} ${usuario.apellido}") },
+                            onClick = {
+                                selectedDocenteName = "${usuario.nombre} ${usuario.apellido}"
+                                selectedDocenteId = usuario.uid
+                                docenteMenuExpanded = false
+                            }
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(16.dp))
-                // -----------------------------
 
                 LabeledDropdownField(
                     label = "Institución",
@@ -241,9 +254,8 @@ fun CreateStudentProfileScreen(
                             edad = edadInt,
                             grado = selectedGrado ?: "",
                             seccion = selectedSeccion ?: "",
-                            idInstitucion = "", // TODO: Replace "" with actual institution ID
-                            // Enviar el docente seleccionado (asumiendo que el modelo StudentViewModel lo soporta)
-                            // Si necesitas un campo para el docente en createStudent, actualiza tu ViewModel/Modelo.
+                            idInstitucion = "",
+                            idDocente = selectedDocenteId
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
