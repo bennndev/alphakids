@@ -115,6 +115,7 @@ fun CameraOCRScreen(
     targetWord: String,
     studentId: String,
     targetImageUrl: String?,
+    emoji: String? = null,
     onBackClick: () -> Unit,
     onWordCompleted: (word: String, imageUrl: String?, studentId: String) -> Unit,
     onTimeExpired: (imageUrl: String?, studentId: String) -> Unit
@@ -339,9 +340,10 @@ fun CameraOCRScreen(
                 NotificationCard(
                     modifier = Modifier.padding(top = 12.dp),
                     title = "Busca la palabra:",
-                    content = targetWord,
-                    imageUrl = targetImageUrl,
-                    icon = Icons.Rounded.Checkroom,
+                    content = targetWord.map { if (it.isWhitespace()) ' ' else '*' }.joinToString(""),
+                    imageUrl = null,
+                    icon = null,
+                    emoji = emoji ?: "🔤",
                     onCloseClick = { showNotification = false }
                 )
             }

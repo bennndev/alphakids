@@ -259,8 +259,12 @@ fun AppNavHost(
             arguments = listOf(
                 navArgument("assignmentId") { type = NavType.StringType },
                 navArgument("targetWord") { type = NavType.StringType },
-                navArgument("studentId") { type = NavType.StringType }, // 🚨 CRÍTICO: Requerido
+                navArgument("studentId") { type = NavType.StringType },
                 navArgument("imageUrl") {
+                    type = NavType.StringType
+                    nullable = true
+                },
+                navArgument("emoji") {
                     type = NavType.StringType
                     nullable = true
                 }
@@ -270,24 +274,24 @@ fun AppNavHost(
             val encodedUrl = entry.arguments?.getString("imageUrl")
             val targetWord = entry.arguments?.getString("targetWord") ?: ""
             val assignmentId = entry.arguments?.getString("assignmentId") ?: ""
-            val studentId = entry.arguments?.getString("studentId") ?: "default" // 🚨 AÑADIDO
+            val studentId = entry.arguments?.getString("studentId") ?: "default"
+            val emojiArg = entry.arguments?.getString("emoji")
 
-            // 🚨 DECODIFICACIÓN CRÍTICA
             val decodedWord = URLDecoder.decode(targetWord, StandardCharsets.UTF_8.name())
-            val decodedUrl = encodedUrl?.let {
-                URLDecoder.decode(it, StandardCharsets.UTF_8.name())
-            }
+            val decodedUrl = encodedUrl?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) }
+            val decodedEmoji = emojiArg?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) }
 
             Log.d("DebugImagen", "PASO 2 (NAVHOST): ¿URL recibida y decodificada? URL = $decodedUrl")
 
             CameraOCRScreen(
                 assignmentId = assignmentId,
                 targetWord = decodedWord,
-                studentId = studentId, // 🚨 PASADO: El studentId
+                studentId = studentId,
                 targetImageUrl = decodedUrl,
+                emoji = decodedEmoji,
                 onBackClick = { navController.popBackStack() },
 
-                // --- LÓGICA DE ÉXITO CORREGIDA (Usando helper) ---
+                // --- LÓGICA DE ÉXITO ---
                 onWordCompleted = { word, completedImageUrl, sId ->
                     val encodedResultWord = URLEncoder.encode(word, StandardCharsets.UTF_8.name())
                     val encodedResultUrl = completedImageUrl?.let {

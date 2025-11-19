@@ -18,6 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,7 +29,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage // <-- ¡CAMBIO 1! Importar AsyncImage
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.SubcomposeAsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.example.alphakids.ui.theme.AlphakidsTheme
 import com.example.alphakids.ui.theme.dmSansFamily
 
@@ -37,8 +41,9 @@ fun NotificationCard(
     modifier: Modifier = Modifier,
     title: String,
     content: String,
-    imageUrl: String? = null, // <-- ¡CAMBIO 2! Aceptar URL (String)
-    icon: ImageVector? = null, // <-- ¡CAMBIO 3! Aceptar Icono (fallback)
+    imageUrl: String? = null,
+    icon: ImageVector? = null,
+    emoji: String? = null,
     onCloseClick: () -> Unit
 ) {
     Card(
@@ -56,15 +61,45 @@ fun NotificationCard(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // --- ¡CAMBIO 4! Lógica para mostrar imagen o icono ---
-                if (imageUrl != null) {
-                    AsyncImage(
-                        model = imageUrl,
+                if (!emoji.isNullOrBlank()) {
+                    Text(
+                        text = emoji,
+                        fontFamily = dmSansFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 28.sp,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    )
+                } else if (imageUrl != null) {
+                    val cleanUrl = imageUrl.trim().replace("`", "").replace("\\s".toRegex(), "").replace("\n", "").replace("\\\\".toRegex(), "")
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(cleanUrl)
+                            .crossfade(true)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .build(),
                         contentDescription = title,
                         modifier = Modifier
                             .size(48.dp)
                             .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
+                        loading = {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        error = {
+                            Icon(
+                                imageVector = icon ?: Icons.Rounded.Checkroom,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
                     )
                 } else if (icon != null) {
                     Icon(

@@ -15,6 +15,7 @@ import javax.inject.Inject
 data class WordPuzzleUiState(
     val isLoading: Boolean = false,
     val assignment: AsignacionPalabra? = null,
+    val wordCategory: String? = null,
     val error: String? = null
 )
 
@@ -37,9 +38,18 @@ class WordPuzzleViewModel @Inject constructor(
                     .await()
                     .toObject(AsignacionPalabra::class.java)
 
+                var categoria: String? = null
+                val palabraId = assignment?.idPalabra
+                if (!palabraId.isNullOrBlank()) {
+                    val palabraDoc = firestore.collection("palabras").document(palabraId).get().await()
+                    val palabra = palabraDoc.toObject(com.example.alphakids.data.firebase.models.Palabra::class.java)
+                    categoria = palabra?.categoria
+                }
+
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    assignment = assignment
+                    assignment = assignment,
+                    wordCategory = categoria
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(

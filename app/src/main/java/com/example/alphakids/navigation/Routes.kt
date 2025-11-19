@@ -98,11 +98,15 @@ object Routes {
 
     // OCR
     const val CAMERA_OCR_BASE = "camera_ocr"
-    /** 🚨 ¡MODIFICACIÓN CRÍTICA! Ahora assignmentId, targetWord y studentId son requeridos en la ruta base. */
-    const val CAMERA_OCR = "$CAMERA_OCR_BASE/{assignmentId}/{targetWord}/{studentId}?imageUrl={imageUrl}"
+    const val CAMERA_OCR = "$CAMERA_OCR_BASE/{assignmentId}/{targetWord}/{studentId}?imageUrl={imageUrl}&emoji={emoji}"
 
-    fun cameraOcrRoute(assignmentId: String, targetWord: String, studentId: String, imageUrl: String?) =
-        "$CAMERA_OCR_BASE/$assignmentId/$targetWord/$studentId${if (imageUrl != null) "?imageUrl=$imageUrl" else ""}"
+    fun cameraOcrRoute(assignmentId: String, targetWord: String, studentId: String, imageUrl: String?, emoji: String?): String {
+        val params = mutableListOf<String>()
+        if (imageUrl != null) params += "imageUrl=$imageUrl"
+        if (emoji != null) params += "emoji=$emoji"
+        val suffix = if (params.isNotEmpty()) "?" + params.joinToString("&") else ""
+        return "$CAMERA_OCR_BASE/$assignmentId/$targetWord/$studentId$suffix"
+    }
 
     // ============================================================
     // DOCENTE
