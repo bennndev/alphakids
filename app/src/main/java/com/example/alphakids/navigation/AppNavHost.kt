@@ -75,6 +75,12 @@ fun AppNavHost(
 
     val onLogout = { authViewModel.logout() }
 
+    val onSimulatedStudentLogout = {
+        navController.navigate(Routes.PROFILES) {
+            popUpTo(Routes.HOME) { inclusive = true }
+        }
+    }
+
     // Navegación bottom nav estudiante
     val navigateToStudentBottomNav: (String) -> Unit = { route ->
         navController.navigate(route) {
@@ -180,7 +186,7 @@ fun AppNavHost(
 
             StudentHomeScreen(
                 studentName = "Estudiante",
-                onLogoutClick = onLogout,
+                onLogoutClick = onSimulatedStudentLogout,
                 onBackClick = { navController.popBackStack() },
                 onPlayClick = {
                     navController.navigate(Routes.assignedWordsRoute(studentId))
@@ -391,7 +397,7 @@ fun AppNavHost(
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             StudentDictionaryScreen(
-                onLogoutClick = onLogout,
+                onLogoutClick = onSimulatedStudentLogout,
                 onBackClick = { navController.popBackStack() },
                 onWordClick = {},
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
@@ -418,7 +424,7 @@ fun AppNavHost(
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             StudentAchievementsScreen(
-                onLogoutClick = onLogout,
+                onLogoutClick = onSimulatedStudentLogout,
                 onBackClick = { navController.popBackStack() },
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
                 onBottomNavClick = { route ->
@@ -628,7 +634,7 @@ fun AppNavHost(
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             StudentStoreScreen(
-                onLogoutClick = onLogout,
+                onLogoutClick = onSimulatedStudentLogout,
                 onBackClick = { navController.popBackStack() },
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
                 onBottomNavClick = { route ->
@@ -654,7 +660,7 @@ fun AppNavHost(
 
             StudentPetsStoreScreen(
                 onBackClick = { navController.popBackStack() },
-                onLogoutClick = onLogout,
+                onLogoutClick = onSimulatedStudentLogout,
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
                 onBottomNavClick = { route ->
                     val targetRoute = when (route) {
@@ -681,7 +687,7 @@ fun AppNavHost(
 
             StudentAccessoriesStoreScreen(
                 onBackClick = { navController.popBackStack() },
-                onLogoutClick = onLogout,
+                onLogoutClick = onSimulatedStudentLogout,
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
                 onBottomNavClick = { route ->
                     val targetRoute = when (route) {
@@ -710,7 +716,7 @@ fun AppNavHost(
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             StudentPetsScreen(
-                onLogoutClick = onLogout,
+                onLogoutClick = onSimulatedStudentLogout,
                 onBackClick = { navController.popBackStack() },
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
                 onBottomNavClick = { route ->
@@ -741,7 +747,7 @@ fun AppNavHost(
 
             StudentPetDetailScreen(
                 onBackClick = { navController.popBackStack() },
-                onLogoutClick = onLogout,
+                onLogoutClick = onSimulatedStudentLogout,
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
                 onBottomNavClick = { route ->
                     val targetRoute = when (route) {
