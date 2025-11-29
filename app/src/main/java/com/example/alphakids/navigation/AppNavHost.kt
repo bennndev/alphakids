@@ -291,31 +291,16 @@ fun AppNavHost(
                 emoji = decodedEmoji,
                 onBackClick = { navController.popBackStack() },
 
-                // --- LÓGICA DE ÉXITO ---
-                onWordCompleted = { word, completedImageUrl, sId ->
-                    val encodedResultWord = URLEncoder.encode(word, StandardCharsets.UTF_8.name())
-                    val encodedResultUrl = completedImageUrl?.let {
-                        URLEncoder.encode(it, StandardCharsets.UTF_8.name())
-                    }
-
-                    // 🚨 Usamos la función helper que incluye el studentId y la imagen
-                    val newRoute = Routes.gameResultRoute(encodedResultWord, sId, encodedResultUrl)
-
-                    navController.navigate(newRoute) {
+                // Acciones tras éxito: volver a lista de asignaciones
+                onWordCompleted = { _, _, sId ->
+                    navController.navigate(Routes.assignedWordsRoute(sId)) {
                         popUpTo(Routes.WORD_PUZZLE_BASE) { inclusive = true } // Elimina Puzzle y Camera
                     }
                 },
 
-                // --- Lógica de Tiempo Agotado (Usando helper) ---
-                onTimeExpired = { expiredImageUrl, sId ->
-                    val encodedResultUrl = expiredImageUrl?.let {
-                        URLEncoder.encode(it, StandardCharsets.UTF_8.name())
-                    }
-
-                    // 🚨 Usamos la función helper que incluye el studentId y la imagen
-                    val newRoute = Routes.gameFailureRoute(sId, encodedResultUrl)
-
-                    navController.navigate(newRoute) {
+                // Acciones tras fallo: volver a lista de asignaciones
+                onTimeExpired = { _, sId ->
+                    navController.navigate(Routes.assignedWordsRoute(sId)) {
                         popUpTo(Routes.WORD_PUZZLE_BASE) { inclusive = true } // Elimina Puzzle y Camera
                     }
                 }

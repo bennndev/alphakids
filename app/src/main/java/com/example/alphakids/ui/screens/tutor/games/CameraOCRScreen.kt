@@ -20,6 +20,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.Checkroom
+import androidx.compose.material.icons.rounded.Pets
+import androidx.compose.material.icons.rounded.Brush
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -147,6 +149,8 @@ fun CameraOCRScreen(
     var isWarning by remember { mutableStateOf(false) }
     var hasWarningSoundPlayed by remember { mutableStateOf(false) }
 
+    var resultDialogState: com.example.alphakids.ui.screens.tutor.game.components.GameResultState? by remember { mutableStateOf(null) }
+
     val cameraController = remember {
         LifecycleCameraController(context).apply {
             setEnabledUseCases(CameraController.IMAGE_ANALYSIS)
@@ -234,7 +238,16 @@ fun CameraOCRScreen(
                 withContext(Dispatchers.IO) { safeReleaseCamera() }
                 withContext(Dispatchers.Main) {
                     MusicManager.stopMusicaJuego()
-                    onWordCompleted(targetWord, targetImageUrl, studentId)
+                    val icon = when (emoji) {
+                        "🐾" -> Icons.Rounded.Pets
+                        "🎨" -> Icons.Rounded.Brush
+                        "🧸" -> Icons.Rounded.Checkroom
+                        else -> Icons.Rounded.Checkroom
+                    }
+                    resultDialogState = com.example.alphakids.ui.screens.tutor.game.components.GameResultState.Success(
+                        word = targetWord.trim().uppercase(),
+                        imageIcon = icon
+                    )
                 }
             }
         }
@@ -266,7 +279,15 @@ fun CameraOCRScreen(
                 withContext(Dispatchers.Main) {
                     MusicManager.stopMusicaJuego()
                     MusicManager.resumeMusicaApp()
-                    onTimeExpired(targetImageUrl, studentId)
+                    val icon = when (emoji) {
+                        "🐾" -> Icons.Rounded.Pets
+                        "🎨" -> Icons.Rounded.Brush
+                        "🧸" -> Icons.Rounded.Checkroom
+                        else -> Icons.Rounded.Checkroom
+                    }
+                    resultDialogState = com.example.alphakids.ui.screens.tutor.game.components.GameResultState.Failure(
+                        imageIcon = icon
+                    )
                 }
             }
         }
@@ -397,6 +418,64 @@ fun CameraOCRScreen(
                     modifier = Modifier.padding(16.dp)
                 )
             }
+        }
+
+        LaunchedEffect(resultDialogState) {
+            when (val s = resultDialogState) {
+                is com.example.alphakids.ui.screens.tutor.game.components.GameResultState.Success -> {
+                    MusicManager.startMusicaExito(context)
+                }
+                is com.example.alphakids.ui.screens.tutor.game.components.GameResultState.Failure -> {
+                    MusicManager.startMusicaFallo(context)
+                }
+                else -> {
+                    MusicManager.stopMusicaExito()
+                    MusicManager.stopMusicaFallo()
+                }
+            }
+        }
+
+        LaunchedEffect(resultDialogState) {
+            when (val s = resultDialogState) {
+                is com.example.alphakids.ui.screens.tutor.game.components.GameResultState.Success -> {
+                    MusicManager.startMusicaExito(context)
+                }
+                is com.example.alphakids.ui.screens.tutor.game.components.GameResultState.Failure -> {
+                    MusicManager.startMusicaFallo(context)
+                }
+                else -> {
+                    MusicManager.stopMusicaExito()
+                    MusicManager.stopMusicaFallo()
+                }
+            }
+        }
+
+        resultDialogState?.let { state ->
+            com.example.alphakids.ui.screens.tutor.game.components.GameResultDialog(
+                state = state,
+                onDismiss = {
+                    MusicManager.stopMusicaExito()
+                    MusicManager.stopMusicaFallo()
+                    resultDialogState = null
+                },
+                onPrimaryAction = {
+                    MusicManager.stopMusicaExito()
+                    MusicManager.stopMusicaFallo()
+                    when (state) {
+                        is com.example.alphakids.ui.screens.tutor.game.components.GameResultState.Success -> {
+                            onWordCompleted(targetWord, targetImageUrl, studentId)
+                        }
+                        is com.example.alphakids.ui.screens.tutor.game.components.GameResultState.Failure -> {
+                            onTimeExpired(targetImageUrl, studentId)
+                        }
+                    }
+                },
+                onSecondaryAction = {
+                    MusicManager.stopMusicaExito()
+                    MusicManager.stopMusicaFallo()
+                    onBackClick()
+                }
+            )
         }
     }
 }

@@ -87,6 +87,7 @@ fun NotificationCard(
                             .clip(RoundedCornerShape(8.dp)),
                         contentScale = ContentScale.Crop,
                         loading = {
+
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
                                 color = MaterialTheme.colorScheme.primary
