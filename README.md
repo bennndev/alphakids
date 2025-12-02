@@ -5,88 +5,113 @@ Sistema móvil educativo para aprendizaje de letras y palabras — Proyecto Qubi
 
 ## 📘 Descripción del Proyecto
 **Alphakids** es una aplicación móvil educativa desarrollada en **Kotlin + Jetpack Compose**, diseñada para que niños de **3 a 5 años** aprendan letras y palabras mediante actividades didácticas.  
-Los docentes asignan palabras personalizadas y los estudiantes interactúan con juegos visuales y auditivos para reforzar su aprendizaje temprano.
-
----
-
-## 🖼️ Vista Previa de la App
-
-### 🔐 Pantalla de Inicio de Sesión
-<img src="screenshots/login.png" width="350">
-
-### 👨‍🏫 Panel Docente
-<img src="screenshots/teacher_dashboard.png" width="350">
-
-### 👦 Lista de Estudiantes
-<img src="screenshots/student_list.png" width="350">
-
-### 🎮 Juego: Completar Palabra
-<img src="screenshots/game_word_complete.png" width="350">
+El docente asigna palabras y actividades, y el niño interactúa con juegos visuales y auditivos que refuerzan el aprendizaje temprano.
 
 ---
 
 ## 🎯 Objetivos del Proyecto
 - Fomentar el aprendizaje temprano de la lectura.  
-- Facilitar que docentes asignen palabras y revisen avances.  
-- Integrar actividades pedagógicas atractivas para los niños.  
-- Ofrecer una experiencia visual, didáctica y accesible.  
+- Facilitar la asignación y seguimiento de palabras por parte de los docentes.  
+- Integrar actividades pedagógicas con tecnología móvil.  
+- Ofrecer una experiencia amigable, visual y accesible para los niños.
 
 ---
 
 ## 📱 Funcionalidades Principales
 
 ### 👨‍🏫 Módulo Docente
-- Crear y administrar estudiantes.
-- Asignar palabras según nivel.
-- Visualizar progreso individual.
-- Filtrar estudiantes por desempeño.
-- **Notificaciones locales** cuando se asigna una palabra.
-- Dashboard dinámico.
+- Registro e inicio de sesión.  
+- Gestión de estudiantes.  
+- Asignación de palabras según dificultad.  
+- Visualización del progreso de cada niño.  
+- **Notificaciones locales** cuando se asigna una palabra.  
+- Filtros de búsqueda y ordenamiento.
 
 ### 👦 Módulo Estudiante
-- Ver palabras asignadas.
-- Jugar actividades de aprendizaje:
-  - Reconocer letras.
-  - Completar palabras.
-  - Asociar sonido–imagen.
-- Experiencia amigable y adaptada a niños pequeños.
-- Progreso guardado automáticamente en Firebase.
-
----
-
-## 🔔 Sistema de Notificaciones Locales
-
-### 📄 Archivo principal: `LocalNotificationHelper.kt`
-
-El sistema utiliza **notificaciones locales Android**, sin backend externo ni FCM.
-
-Se usan:
-- Canal de notificación Android  
-- PendingIntent para abrir la app  
-- Notificación autodescartable  
-- Activación automática al asignar una palabra  
-
-Ejemplo visual (referencial):
-
-<img src="screenshots/notification_example.png" width="350">
+- Vista de palabras asignadas.  
+- Juegos didácticos:  
+  - Selección de letras.  
+  - Reconocimiento de sonidos.  
+  - Completar palabras.  
+- Retroalimentación visual y sonora.  
+- Avance guardado en Firebase.
 
 ---
 
 ## 🛠️ Tecnologías Utilizadas
 
-### **Frontend (App Móvil)**
+### **App Móvil**
 - Kotlin  
 - Jetpack Compose  
-- Material 3  
 - ViewModel + StateFlow  
-- MVVM Clean Architecture  
+- Coroutines  
+- Material 3  
+- Arquitectura MVVM  
 
 ### **Servicios**
 - Firebase Authentication  
 - Firebase Firestore  
-- Firebase Storage  
-- Notificaciones locales (sin backend externo)
+- Firebase Storage (opcional)  
+- **Notificaciones locales Android**
 
 ---
 
 ## 📂 Estructura del Proyecto
+
+alphakids/
+├── data/
+│ ├── firebase/
+│ ├── mappers/
+│ ├── notification/
+│ └── repository/
+├── domain/
+│ ├── models/
+│ └── repository/
+├── ui/
+│ ├── screens/
+│ ├── components/
+│ └── theme/
+└── MainActivity.kt
+
+
+---
+
+## 🔔 Sistema de Notificaciones Locales
+El proyecto utiliza un helper personalizado para mostrar notificaciones locales en Android cuando el docente asigna una nueva palabra al estudiante.
+
+### **Archivo:** `LocalNotificationHelper.kt`
+- Crea el canal de notificaciones.  
+- Muestra notificaciones locales dentro de la app.  
+- Se activa automáticamente cuando el docente asigna una palabra.
+
+No requiere backend, ni servicios externos, ni FCM.
+
+---
+
+## 🧪 Estado Actual del Proyecto
+- MVP funcional.  
+- Módulo docente completo.  
+- Módulo estudiante operativo.  
+- Juegos implementados.  
+- Notificaciones locales integradas.  
+- Se continuará optimizando la experiencia de usuario.
+
+---
+
+## 👥 Equipo — Qubit (OM03)
+- **Diego Raúl Llanos García**  
+- **Guiller Breyneer Rojas Juño**  
+- **Junior Benjamín Sullca Huamán**
+- **Gerald Brand Zinanyuca Calcina**
+
+**Mentor:** Mauricio Surco  
+
+---
+
+## 📄 Licencia
+Proyecto académico para la carrera de Diseño y Desarrollo de Software — Tecsup.
+
+---
+
+## 📫 Contacto
+Para mejoras, ideas y colaboración, comunicarse con el equipo Qubit.
