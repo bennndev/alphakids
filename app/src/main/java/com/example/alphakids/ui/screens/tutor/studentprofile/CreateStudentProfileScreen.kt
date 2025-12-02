@@ -42,18 +42,22 @@ fun CreateStudentProfileScreen(
     var apellido by remember { mutableStateOf("") }
     var edadString by remember { mutableStateOf("") }
 
-    val instituciones = listOf("Institución A", "Institución B", "Otra")
-    val grados = listOf("Inicial 3 años", "Inicial 4 años", "Inicial 5 años")
-    val secciones = listOf("A", "B", "C")
+    val institutions by viewModel.institutions.collectAsState()
+    val grades by viewModel.grades.collectAsState()
+    val sections by viewModel.sections.collectAsState()
+    val filteredDocentes by viewModel.filteredDocentes.collectAsState()
 
-    val docentes by viewModel.docentes.collectAsState()
-
-    var selectedInstitucion by remember { mutableStateOf<String?>(null) }
-    var selectedGrado by remember { mutableStateOf<String?>(null) }
-    var selectedSeccion by remember { mutableStateOf<String?>(null) }
+    val selectedInstitucion by viewModel.selectedInstitution.collectAsState()
+    val selectedGrado by viewModel.selectedGrade.collectAsState()
+    val selectedSeccion by viewModel.selectedSection.collectAsState()
 
     var selectedDocenteName by remember { mutableStateOf("") }
     var selectedDocenteId by remember { mutableStateOf<String?>(null) }
+
+    var institutionExpanded by remember { mutableStateOf(false) }
+    var gradeExpanded by remember { mutableStateOf(false) }
+    var sectionExpanded by remember { mutableStateOf(false) }
+    var docenteExpanded by remember { mutableStateOf(false) }
 
     val uiState by viewModel.createUiState.collectAsState()
     val isLoading = uiState is StudentUiState.Loading
@@ -75,33 +79,6 @@ fun CreateStudentProfileScreen(
             }
         }
     }
-
-    // He modificado las llamadas a LabeledDropdownField para incluir 'options' y 'onOptionSelected'
-    // Asumo que se usa la implementación funcional de la tarea anterior o una similar.
-    @Composable
-    fun LabeledDropdownFieldWrapper(
-        label: String,
-        selectedOption: String,
-        options: List<String>,
-        placeholderText: String,
-        onOptionSelected: (String) -> Unit
-    ) {
-        // Asumo que LabeledDropdownField acepta esta firma.
-        // Si no tienes el componente, necesitarás implementarlo usando ExposedDropdownMenuBox.
-        // Dado que el componente ya está importado, lo usaré con la firma completa.
-        com.example.alphakids.ui.components.LabeledDropdownField(
-            label = label,
-            selectedOption = selectedOption,
-            placeholderText = placeholderText,
-            // Estos parámetros deben ser manejados internamente por LabeledDropdownField si es un dropdown real
-            onClick = { /* Lógica de apertura, puede quedar vacío si el componente la maneja internamente */ }
-        )
-        // Debido a que no tengo la implementación de 'LabeledDropdownField', y los parámetros
-        // 'onClick' y 'selectedOption' sugieren que es un campo visual, no funcional.
-        // Si quieres que funcione, debes usar la implementación que hice en la tarea anterior.
-        // Por ahora, solo agregaré el nuevo campo, replicando la estructura existente:
-    }
-
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -146,11 +123,22 @@ fun CreateStudentProfileScreen(
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Nuevo Perfil", fontFamily = dmSansFamily, fontWeight = FontWeight.Bold, fontSize = 24.sp)
+                Text(
+                    "Nuevo Perfil",
+                    fontFamily = dmSansFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp
+                )
                 Spacer(modifier = Modifier.height(5.dp))
-                Text("Ingresa los datos de tu hijo", fontFamily = dmSansFamily, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Ingresa los datos de tu hijo",
+                    fontFamily = dmSansFamily,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Spacer(modifier = Modifier.height(32.dp))
 
+                // Nombre
                 LabeledTextField(
                     label = "Nombre",
                     value = nombre,
@@ -160,6 +148,7 @@ fun CreateStudentProfileScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Apellido
                 LabeledTextField(
                     label = "Apellido",
                     value = apellido,
@@ -169,6 +158,7 @@ fun CreateStudentProfileScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Edad
                 LabeledTextField(
                     label = "Edad",
                     value = edadString,
@@ -179,56 +169,161 @@ fun CreateStudentProfileScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                var docenteMenuExpanded by remember { mutableStateOf(false) }
-
-                LabeledDropdownField(
-                    label = "Docente",
-                    selectedOption = selectedDocenteName,
-                    placeholderText = "Selecciona docente (Opcional)",
-                    onClick = { docenteMenuExpanded = true }
-                )
-                DropdownMenu(
-                    expanded = docenteMenuExpanded,
-                    onDismissRequest = { docenteMenuExpanded = false }
-                ) {
-                    docentes.forEach { usuario ->
-                        DropdownMenuItem(
-                            text = { Text(text = "${usuario.nombre} ${usuario.apellido}") },
-                            onClick = {
-                                selectedDocenteName = "${usuario.nombre} ${usuario.apellido}"
-                                selectedDocenteId = usuario.uid
-                                docenteMenuExpanded = false
-                            }
-                        )
+                // 1. Institución
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    LabeledDropdownField(
+                        label = "Institución",
+                        selectedOption = selectedInstitucion?.nombre ?: "",
+                        placeholderText = "Selecciona institución",
+                        onClick = {
+                            institutionExpanded = true
+                        }
+                    )
+                    DropdownMenu(
+                        expanded = institutionExpanded,
+                        onDismissRequest = { institutionExpanded = false }
+                    ) {
+                        institutions.forEach { institution ->
+                            DropdownMenuItem(
+                                text = { Text(text = institution.nombre) },
+                                onClick = {
+                                    viewModel.selectInstitution(institution)
+                                    // Reset dependientes
+                                    selectedDocenteName = ""
+                                    selectedDocenteId = null
+                                    institutionExpanded = false
+                                }
+                            )
+                        }
                     }
                 }
+
                 Spacer(modifier = Modifier.height(16.dp))
 
-                LabeledDropdownField(
-                    label = "Institución",
-                    selectedOption = selectedInstitucion ?: "",
-                    placeholderText = "Selecciona institución (Opcional)",
-                    onClick = { /* TODO: Mostrar menú dropdown real */ }
-                )
+                // 2. Grado
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    LabeledDropdownField(
+                        label = "Grado",
+                        selectedOption = selectedGrado?.name ?: "",
+                        placeholderText = "Selecciona grado",
+                        onClick = {
+                            if (selectedInstitucion != null) {
+                                gradeExpanded = true
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Primero selecciona una institución",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    )
+                    DropdownMenu(
+                        expanded = gradeExpanded,
+                        onDismissRequest = { gradeExpanded = false }
+                    ) {
+                        grades.forEach { grade ->
+                            DropdownMenuItem(
+                                text = { Text(text = grade.name) },
+                                onClick = {
+                                    viewModel.selectGrade(grade)
+                                    // Reset dependientes
+                                    selectedDocenteName = ""
+                                    selectedDocenteId = null
+                                    gradeExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
-                LabeledDropdownField(
-                    label = "Grado",
-                    selectedOption = selectedGrado ?: "",
-                    placeholderText = "Selecciona grado (Opcional)",
-                    onClick = { /* TODO: Mostrar menú dropdown real */ }
-                )
+
+                // 3. Sección
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    LabeledDropdownField(
+                        label = "Sección",
+                        selectedOption = selectedSeccion?.code ?: "",
+                        placeholderText = "Selecciona sección",
+                        onClick = {
+                            if (selectedGrado != null) {
+                                sectionExpanded = true
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Primero selecciona un grado",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    )
+                    DropdownMenu(
+                        expanded = sectionExpanded,
+                        onDismissRequest = { sectionExpanded = false }
+                    ) {
+                        sections.forEach { section ->
+                            DropdownMenuItem(
+                                text = { Text(text = section.code) },
+                                onClick = {
+                                    viewModel.selectSection(section)
+                                    selectedDocenteName = ""
+                                    selectedDocenteId = null
+                                    sectionExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
-                LabeledDropdownField(
-                    label = "Sección",
-                    selectedOption = selectedSeccion ?: "",
-                    placeholderText = "Selecciona sección (Opcional)",
-                    onClick = { /* TODO: Mostrar menú dropdown real */ }
-                )
+
+                // 4. Docente
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    LabeledDropdownField(
+                        label = "Docente",
+                        selectedOption = selectedDocenteName,
+                        placeholderText = "Selecciona docente (Opcional)",
+                        onClick = {
+                            if (selectedSeccion != null) {
+                                docenteExpanded = true
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Primero selecciona una sección",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    )
+                    DropdownMenu(
+                        expanded = docenteExpanded,
+                        onDismissRequest = { docenteExpanded = false }
+                    ) {
+                        if (filteredDocentes.isEmpty()) {
+                            DropdownMenuItem(
+                                text = { Text("No hay docentes asignados") },
+                                onClick = { docenteExpanded = false },
+                                enabled = false
+                            )
+                        } else {
+                            filteredDocentes.forEach { usuario ->
+                                DropdownMenuItem(
+                                    text = { Text(text = "${usuario.nombre} ${usuario.apellido}") },
+                                    onClick = {
+                                        selectedDocenteName = "${usuario.nombre} ${usuario.apellido}"
+                                        selectedDocenteId = usuario.uid
+                                        docenteExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 if (uiState is StudentUiState.Error) {
-                    // Aquí se mostraría el error si fuera necesario
+                    // Aquí podrías mostrar un Text con el error si quieres
                 }
 
                 PrimaryButton(
@@ -252,9 +347,9 @@ fun CreateStudentProfileScreen(
                             nombre = nombre,
                             apellido = apellido,
                             edad = edadInt,
-                            grado = selectedGrado ?: "",
-                            seccion = selectedSeccion ?: "",
-                            idInstitucion = "",
+                            grado = selectedGrado?.name ?: "",
+                            seccion = selectedSeccion?.code ?: "",
+                            idInstitucion = selectedInstitucion?.id ?: "",
                             idDocente = selectedDocenteId
                         )
                     },

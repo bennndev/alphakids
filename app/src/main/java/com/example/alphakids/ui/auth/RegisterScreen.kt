@@ -187,57 +187,60 @@ fun RegisterScreen(
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 if (!isTutorRegister) {
+
                     val institutions by viewModel.institutions.collectAsState()
                     val grades by viewModel.grades.collectAsState()
                     val sections by viewModel.sections.collectAsState()
+
                     val selectedInstitution by viewModel.selectedInstitution.collectAsState()
                     val selectedGrade by viewModel.selectedGrade.collectAsState()
                     val selectedSection by viewModel.selectedSection.collectAsState()
 
-                    var institutionExpanded by remember { mutableStateOf(false) }
+                    var instExpanded by remember { mutableStateOf(false) }
                     var gradeExpanded by remember { mutableStateOf(false) }
                     var sectionExpanded by remember { mutableStateOf(false) }
 
-                    // Institution Dropdown
+                    // --- INSTITUCIÓN ---
                     Box(modifier = Modifier.fillMaxWidth()) {
                         LabeledDropdownField(
                             label = "Institución",
                             selectedOption = selectedInstitution?.nombre ?: "",
-                            placeholderText = "Selecciona institución (Opcional)",
-                            onClick = { institutionExpanded = true }
+                            placeholderText = "Selecciona institución",
+                            onClick = { instExpanded = true }
                         )
                         DropdownMenu(
-                            expanded = institutionExpanded,
-                            onDismissRequest = { institutionExpanded = false }
+                            expanded = instExpanded,
+                            onDismissRequest = { instExpanded = false }
                         ) {
-                            institutions.forEach { institution ->
+                            institutions.forEach { inst ->
                                 DropdownMenuItem(
-                                    text = { Text(text = institution.nombre) },
+                                    text = { Text(inst.nombre) },
                                     onClick = {
-                                        viewModel.selectInstitution(institution)
-                                        institutionExpanded = false
+                                        viewModel.selectInstitution(inst)
+                                        instExpanded = false
                                     }
                                 )
                             }
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Grade Dropdown
+                    // --- GRADO ---
                     Box(modifier = Modifier.fillMaxWidth()) {
                         LabeledDropdownField(
                             label = "Grado",
                             selectedOption = selectedGrade?.name ?: "",
-                            placeholderText = "Selecciona grado (Opcional)",
-                            onClick = { 
-                                if (selectedInstitution != null) {
-                                    gradeExpanded = true 
-                                } else {
-                                    Toast.makeText(context, "Primero selecciona una institución", Toast.LENGTH_SHORT).show()
-                                }
+                            placeholderText = "Selecciona grado",
+                            onClick = {
+                                if (selectedInstitution != null) gradeExpanded = true
+                                else Toast.makeText(
+                                    context,
+                                    "Primero selecciona una institución",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         )
                         DropdownMenu(
@@ -246,7 +249,7 @@ fun RegisterScreen(
                         ) {
                             grades.forEach { grade ->
                                 DropdownMenuItem(
-                                    text = { Text(text = grade.name) },
+                                    text = { Text(grade.name) },
                                     onClick = {
                                         viewModel.selectGrade(grade)
                                         gradeExpanded = false
@@ -258,29 +261,30 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Section Dropdown
+                    // --- SECCIÓN ---
                     Box(modifier = Modifier.fillMaxWidth()) {
                         LabeledDropdownField(
                             label = "Sección",
                             selectedOption = selectedSection?.code ?: "",
-                            placeholderText = "Selecciona sección (Opcional)",
-                            onClick = { 
-                                if (selectedGrade != null) {
-                                    sectionExpanded = true 
-                                } else {
-                                    Toast.makeText(context, "Primero selecciona un grado", Toast.LENGTH_SHORT).show()
-                                }
+                            placeholderText = "Selecciona sección",
+                            onClick = {
+                                if (selectedGrade != null) sectionExpanded = true
+                                else Toast.makeText(
+                                    context,
+                                    "Primero selecciona un grado",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         )
                         DropdownMenu(
                             expanded = sectionExpanded,
                             onDismissRequest = { sectionExpanded = false }
                         ) {
-                            sections.forEach { section ->
+                            sections.forEach { sec ->
                                 DropdownMenuItem(
-                                    text = { Text(text = section.code) },
+                                    text = { Text(sec.code) },
                                     onClick = {
-                                        viewModel.selectSection(section)
+                                        viewModel.selectSection(sec)
                                         sectionExpanded = false
                                     }
                                 )
