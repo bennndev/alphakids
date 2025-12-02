@@ -1,5 +1,6 @@
 package com.example.alphakids.data.di
 
+import android.content.Context
 import com.example.alphakids.data.firebase.repository.AssignmentRepositoryImpl
 import com.example.alphakids.data.firebase.repository.AuthRepositoryImpl
 import com.example.alphakids.data.firebase.repository.ImageStorageRepositoryImpl
@@ -12,10 +13,11 @@ import com.example.alphakids.domain.repository.StudentRepository
 import com.example.alphakids.domain.repository.WordRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage // Importación necesaria para el constructor de ImageStorageRepositoryImpl
+import com.google.firebase.storage.FirebaseStorage
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -43,8 +45,11 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideAssignmentRepository(db: FirebaseFirestore): AssignmentRepository {
-        return AssignmentRepositoryImpl(db)
+    fun provideAssignmentRepository(
+        db: FirebaseFirestore,
+        @ApplicationContext context: Context
+    ): AssignmentRepository {
+        return AssignmentRepositoryImpl(db, context)
     }
 
     @Provides

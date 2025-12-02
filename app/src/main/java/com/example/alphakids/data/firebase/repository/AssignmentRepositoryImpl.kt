@@ -1,8 +1,10 @@
 package com.example.alphakids.data.firebase.repository
 
+import android.content.Context
 import android.util.Log
 import com.example.alphakids.data.firebase.models.AsignacionPalabra
 import com.example.alphakids.data.firebase.models.Estudiante
+import com.example.alphakids.data.notification.LocalNotificationHelper
 import com.example.alphakids.data.mappers.WordAssignmentMapper
 import com.example.alphakids.domain.models.WordAssignment
 import com.example.alphakids.domain.repository.AssignmentRepository
@@ -21,7 +23,8 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 class AssignmentRepositoryImpl @Inject constructor(
-    private val db: FirebaseFirestore
+    private val db: FirebaseFirestore,
+    private val context: Context
 ) : AssignmentRepository {
 
     private val asignacionesCol = db.collection("asignaciones")
@@ -32,6 +35,24 @@ class AssignmentRepositoryImpl @Inject constructor(
             val asignacionMap = WordAssignmentMapper.fromDomain(assignment)
             val docRef = asignacionesCol.add(asignacionMap).await()
             Log.d("AssignmentRepo", "Asignación creada con ID: ${docRef.id}")
+            
+            // Obtener el nombre del estudiante para la notificación
+            try {
+                val studentDoc = estudiantesCol.document(assignment.idEstudiante).get().await()
+                val studentName = studentDoc.getString("nombre") ?: "el estudiante"
+                
+                // Mostrar notificación local
+                LocalNotificationHelper.showWordAssignmentNotification(
+                    context = context,
+                    wordText = assignment.palabraTexto,
+                    studentName = studentName
+                )
+                Log.d("AssignmentRepo", "Notificación local mostrada")
+            } catch (e: Exception) {
+                Log.e("AssignmentRepo", "Error al mostrar notificación", e)
+                // No fallar la asignación si falla la notificación
+            }
+            
             Result.success(docRef.id)
         } catch (e: Exception) {
             Log.e("AssignmentRepo", "Error al crear asignación", e)
