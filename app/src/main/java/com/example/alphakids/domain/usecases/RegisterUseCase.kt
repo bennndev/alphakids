@@ -12,6 +12,9 @@ class RegisterUserUseCase @Inject constructor(
         email: String,
         clave: String,
         telefono: String,
-        rol: String
-    ) = repository.register(nombre, apellido, email, clave, telefono, rol)
+        rol: String,
+        idInstitucion: String = "",
+        grado: String = "",
+        seccion: String = ""
+    ) = repository.register(nombre, apellido, email, clave, telefono, rol, idInstitucion, grado, seccion)
 }

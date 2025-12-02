@@ -107,15 +107,23 @@ fun WordPuzzleScreen(
                             val encodedTargetWord = URLEncoder.encode(targetWord, StandardCharsets.UTF_8.name())
 
                             // 3. 🚨 USAR LA FUNCIÓN HELPER DEL ARCHIVO ROUTES.KT CORREGIDO
+                            val emoji = when (uiState.wordCategory?.lowercase()) {
+                                "animales" -> "🐾"
+                                "colores" -> "🎨"
+                                "objetos" -> "🧸"
+                                else -> null
+                            }
+                            val encodedEmoji = emoji?.let { URLEncoder.encode(it, StandardCharsets.UTF_8.name()) }
+
                             val route = Routes.cameraOcrRoute(
                                 assignmentId = assignmentId,
-                                targetWord = encodedTargetWord, // Usa la palabra codificada
+                                targetWord = encodedTargetWord,
                                 studentId = studentId,
-                                imageUrl = encodedUrl // Usa la URL codificada (puede ser null)
+                                imageUrl = encodedUrl,
+                                emoji = encodedEmoji
                             )
 
                             Log.d("!!! DEBUG !!!", "Navegando con RUTA CORREGIDA: $route")
-                            // Ejemplo de ruta generada ahora: camera_ocr/3UbgGgbvj0W9H5c3hrQ8/sapo/U53IJFxxGBs9SE2kjGde?imageUrl=...
                             navController.navigate(route)
                         }
                     )

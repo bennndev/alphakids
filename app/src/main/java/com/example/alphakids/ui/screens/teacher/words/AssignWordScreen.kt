@@ -301,7 +301,7 @@ fun AssignWordScreen(
 
     var showSuccessDialog by remember { mutableStateOf(false) }
     var wordSearchQuery by remember { mutableStateOf("") }
-    var selectedMode by remember { mutableStateOf("IA") }
+    var selectedMode by remember { mutableStateOf("Manual") }
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -472,6 +472,9 @@ fun AssignWordScreen(
                             imageUrl = word.imagenUrl,
                             onClickAssign = {
                                 viewModel.createAssignment(word)
+                            },
+                            onClickAssignAll = {
+                                viewModel.createAssignmentForAll(word)
                             }
                         )
                     }

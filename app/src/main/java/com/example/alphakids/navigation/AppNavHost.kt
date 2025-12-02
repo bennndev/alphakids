@@ -75,6 +75,12 @@ fun AppNavHost(
 
     val onLogout = { authViewModel.logout() }
 
+    val onSimulatedStudentLogout = {
+        navController.navigate(Routes.PROFILES) {
+            popUpTo(Routes.HOME) { inclusive = true }
+        }
+    }
+
     // Navegación bottom nav estudiante
     val navigateToStudentBottomNav: (String) -> Unit = { route ->
         navController.navigate(route) {
@@ -180,7 +186,7 @@ fun AppNavHost(
 
             StudentHomeScreen(
                 studentName = "Estudiante",
-                onLogoutClick = onLogout,
+                onLogoutClick = onSimulatedStudentLogout,
                 onBackClick = { navController.popBackStack() },
                 onPlayClick = {
                     navController.navigate(Routes.assignedWordsRoute(studentId))
@@ -253,8 +259,12 @@ fun AppNavHost(
             arguments = listOf(
                 navArgument("assignmentId") { type = NavType.StringType },
                 navArgument("targetWord") { type = NavType.StringType },
-                navArgument("studentId") { type = NavType.StringType }, // 🚨 CRÍTICO: Requerido
+                navArgument("studentId") { type = NavType.StringType },
                 navArgument("imageUrl") {
+                    type = NavType.StringType
+                    nullable = true
+                },
+                navArgument("emoji") {
                     type = NavType.StringType
                     nullable = true
                 }
@@ -264,48 +274,33 @@ fun AppNavHost(
             val encodedUrl = entry.arguments?.getString("imageUrl")
             val targetWord = entry.arguments?.getString("targetWord") ?: ""
             val assignmentId = entry.arguments?.getString("assignmentId") ?: ""
-            val studentId = entry.arguments?.getString("studentId") ?: "default" // 🚨 AÑADIDO
+            val studentId = entry.arguments?.getString("studentId") ?: "default"
+            val emojiArg = entry.arguments?.getString("emoji")
 
-            // 🚨 DECODIFICACIÓN CRÍTICA
             val decodedWord = URLDecoder.decode(targetWord, StandardCharsets.UTF_8.name())
-            val decodedUrl = encodedUrl?.let {
-                URLDecoder.decode(it, StandardCharsets.UTF_8.name())
-            }
+            val decodedUrl = encodedUrl?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) }
+            val decodedEmoji = emojiArg?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) }
 
             Log.d("DebugImagen", "PASO 2 (NAVHOST): ¿URL recibida y decodificada? URL = $decodedUrl")
 
             CameraOCRScreen(
                 assignmentId = assignmentId,
                 targetWord = decodedWord,
-                studentId = studentId, // 🚨 PASADO: El studentId
+                studentId = studentId,
                 targetImageUrl = decodedUrl,
+                emoji = decodedEmoji,
                 onBackClick = { navController.popBackStack() },
 
-                // --- LÓGICA DE ÉXITO CORREGIDA (Usando helper) ---
-                onWordCompleted = { word, completedImageUrl, sId ->
-                    val encodedResultWord = URLEncoder.encode(word, StandardCharsets.UTF_8.name())
-                    val encodedResultUrl = completedImageUrl?.let {
-                        URLEncoder.encode(it, StandardCharsets.UTF_8.name())
-                    }
-
-                    // 🚨 Usamos la función helper que incluye el studentId y la imagen
-                    val newRoute = Routes.gameResultRoute(encodedResultWord, sId, encodedResultUrl)
-
-                    navController.navigate(newRoute) {
+                // Acciones tras éxito: volver a lista de asignaciones
+                onWordCompleted = { _, _, sId ->
+                    navController.navigate(Routes.assignedWordsRoute(sId)) {
                         popUpTo(Routes.WORD_PUZZLE_BASE) { inclusive = true } // Elimina Puzzle y Camera
                     }
                 },
 
-                // --- Lógica de Tiempo Agotado (Usando helper) ---
-                onTimeExpired = { expiredImageUrl, sId ->
-                    val encodedResultUrl = expiredImageUrl?.let {
-                        URLEncoder.encode(it, StandardCharsets.UTF_8.name())
-                    }
-
-                    // 🚨 Usamos la función helper que incluye el studentId y la imagen
-                    val newRoute = Routes.gameFailureRoute(sId, encodedResultUrl)
-
-                    navController.navigate(newRoute) {
+                // Acciones tras fallo: volver a lista de asignaciones
+                onTimeExpired = { _, sId ->
+                    navController.navigate(Routes.assignedWordsRoute(sId)) {
                         popUpTo(Routes.WORD_PUZZLE_BASE) { inclusive = true } // Elimina Puzzle y Camera
                     }
                 }
@@ -391,7 +386,7 @@ fun AppNavHost(
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             StudentDictionaryScreen(
-                onLogoutClick = onLogout,
+                onLogoutClick = onSimulatedStudentLogout,
                 onBackClick = { navController.popBackStack() },
                 onWordClick = {},
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
@@ -418,7 +413,7 @@ fun AppNavHost(
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             StudentAchievementsScreen(
-                onLogoutClick = onLogout,
+                onLogoutClick = onSimulatedStudentLogout,
                 onBackClick = { navController.popBackStack() },
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
                 onBottomNavClick = { route ->
@@ -628,7 +623,7 @@ fun AppNavHost(
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             StudentStoreScreen(
-                onLogoutClick = onLogout,
+                onLogoutClick = onSimulatedStudentLogout,
                 onBackClick = { navController.popBackStack() },
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
                 onBottomNavClick = { route ->
@@ -654,7 +649,7 @@ fun AppNavHost(
 
             StudentPetsStoreScreen(
                 onBackClick = { navController.popBackStack() },
-                onLogoutClick = onLogout,
+                onLogoutClick = onSimulatedStudentLogout,
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
                 onBottomNavClick = { route ->
                     val targetRoute = when (route) {
@@ -681,7 +676,7 @@ fun AppNavHost(
 
             StudentAccessoriesStoreScreen(
                 onBackClick = { navController.popBackStack() },
-                onLogoutClick = onLogout,
+                onLogoutClick = onSimulatedStudentLogout,
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
                 onBottomNavClick = { route ->
                     val targetRoute = when (route) {
@@ -710,7 +705,7 @@ fun AppNavHost(
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             StudentPetsScreen(
-                onLogoutClick = onLogout,
+                onLogoutClick = onSimulatedStudentLogout,
                 onBackClick = { navController.popBackStack() },
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
                 onBottomNavClick = { route ->
@@ -741,7 +736,7 @@ fun AppNavHost(
 
             StudentPetDetailScreen(
                 onBackClick = { navController.popBackStack() },
-                onLogoutClick = onLogout,
+                onLogoutClick = onSimulatedStudentLogout,
                 onSettingsClick = { navController.navigate(Routes.editStudentProfileRoute(studentId)) },
                 onBottomNavClick = { route ->
                     val targetRoute = when (route) {

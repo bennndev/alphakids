@@ -20,6 +20,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.Checkroom
+import androidx.compose.material.icons.rounded.Pets
+import androidx.compose.material.icons.rounded.Brush
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -115,6 +117,7 @@ fun CameraOCRScreen(
     targetWord: String,
     studentId: String,
     targetImageUrl: String?,
+    emoji: String? = null,
     onBackClick: () -> Unit,
     onWordCompleted: (word: String, imageUrl: String?, studentId: String) -> Unit,
     onTimeExpired: (imageUrl: String?, studentId: String) -> Unit
@@ -135,11 +138,18 @@ fun CameraOCRScreen(
     var roiRect by remember { mutableStateOf<FloatArray?>(null) }
     var showNotification by remember { mutableStateOf(true) }
 
+    var isCountdownRunning by remember { mutableStateOf(true) }
+    var isCountdownFinished by remember { mutableStateOf(false) }
+    var countdownIndex by remember { mutableStateOf(0) }
+    val countdownSequence = listOf("3", "2", "1", "¡Empieza!")
+
     val totalMillis = 60_000L
     var remainingMillis by remember { mutableStateOf(totalMillis) }
     var progress by remember { mutableStateOf(0f) }
     var isWarning by remember { mutableStateOf(false) }
     var hasWarningSoundPlayed by remember { mutableStateOf(false) }
+
+    var resultDialogState: com.example.alphakids.ui.screens.tutor.game.components.GameResultState? by remember { mutableStateOf(null) }
 
     val cameraController = remember {
         LifecycleCameraController(context).apply {
@@ -167,6 +177,15 @@ fun CameraOCRScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        countdownSequence.forEachIndexed { i, _ ->
+            countdownIndex = i
+            delay(800)
+        }
+        isCountdownRunning = false
+        isCountdownFinished = true
+    }
+
     DisposableEffect(Unit) {
         onDispose {
             try {
@@ -187,16 +206,18 @@ fun CameraOCRScreen(
         cameraController.bindToLifecycle(lifecycleOwner)
     }
 
-    LaunchedEffect(cameraController, targetWord) {
-        val textAnalyzer = TextAnalyzer(
-            targetWord = targetWord,
-            onTextDetected = { text ->
-                scope.launch(Dispatchers.Main) {
-                    detectedText = text
+    LaunchedEffect(cameraController, targetWord, isCountdownFinished) {
+        if (isCountdownFinished) {
+            val textAnalyzer = TextAnalyzer(
+                targetWord = targetWord,
+                onTextDetected = { text ->
+                    scope.launch(Dispatchers.Main) {
+                        detectedText = text
+                    }
                 }
-            }
-        )
-        cameraController.setImageAnalysisAnalyzer(executor, textAnalyzer)
+            )
+            cameraController.setImageAnalysisAnalyzer(executor, textAnalyzer)
+        }
     }
 
     // 🏆 Lógica de éxito
@@ -217,14 +238,24 @@ fun CameraOCRScreen(
                 withContext(Dispatchers.IO) { safeReleaseCamera() }
                 withContext(Dispatchers.Main) {
                     MusicManager.stopMusicaJuego()
-                    onWordCompleted(targetWord, targetImageUrl, studentId)
+                    val icon = when (emoji) {
+                        "🐾" -> Icons.Rounded.Pets
+                        "🎨" -> Icons.Rounded.Brush
+                        "🧸" -> Icons.Rounded.Checkroom
+                        else -> Icons.Rounded.Checkroom
+                    }
+                    resultDialogState = com.example.alphakids.ui.screens.tutor.game.components.GameResultState.Success(
+                        word = targetWord.trim().uppercase(),
+                        imageIcon = icon
+                    )
                 }
             }
         }
     }
 
     // ⏰ Lógica de perder (usa AUDIO_TIMEOUT_URL)
-    LaunchedEffect(isWordCompleted) {
+    LaunchedEffect(isCountdownFinished, isWordCompleted) {
+        if (!isCountdownFinished) return@LaunchedEffect
         while (remainingMillis > 0 && !isWordCompleted) {
             delay(1000)
             if (!isWordCompleted) {
@@ -248,7 +279,15 @@ fun CameraOCRScreen(
                 withContext(Dispatchers.Main) {
                     MusicManager.stopMusicaJuego()
                     MusicManager.resumeMusicaApp()
-                    onTimeExpired(targetImageUrl, studentId)
+                    val icon = when (emoji) {
+                        "🐾" -> Icons.Rounded.Pets
+                        "🎨" -> Icons.Rounded.Brush
+                        "🧸" -> Icons.Rounded.Checkroom
+                        else -> Icons.Rounded.Checkroom
+                    }
+                    resultDialogState = com.example.alphakids.ui.screens.tutor.game.components.GameResultState.Failure(
+                        imageIcon = icon
+                    )
                 }
             }
         }
@@ -322,10 +361,29 @@ fun CameraOCRScreen(
                 NotificationCard(
                     modifier = Modifier.padding(top = 12.dp),
                     title = "Busca la palabra:",
-                    content = targetWord,
-                    imageUrl = targetImageUrl,
-                    icon = Icons.Rounded.Checkroom,
+                    content = targetWord.map { if (it.isWhitespace()) ' ' else '*' }.joinToString(""),
+                    imageUrl = null,
+                    icon = null,
+                    emoji = emoji ?: "🔤",
                     onCloseClick = { showNotification = false }
+                )
+            }
+        }
+
+        if (isCountdownRunning) {
+            AnimatedContent(
+                modifier = Modifier.align(Alignment.Center),
+                targetState = countdownIndex,
+                transitionSpec = {
+                    fadeIn() + scaleIn() togetherWith fadeOut() + scaleOut()
+                }
+            ) { idx ->
+                Text(
+                    text = countdownSequence[idx],
+                    fontFamily = dmSansFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 48.sp,
+                    color = Color.White
                 )
             }
         }
@@ -360,6 +418,64 @@ fun CameraOCRScreen(
                     modifier = Modifier.padding(16.dp)
                 )
             }
+        }
+
+        LaunchedEffect(resultDialogState) {
+            when (val s = resultDialogState) {
+                is com.example.alphakids.ui.screens.tutor.game.components.GameResultState.Success -> {
+                    MusicManager.startMusicaExito(context)
+                }
+                is com.example.alphakids.ui.screens.tutor.game.components.GameResultState.Failure -> {
+                    MusicManager.startMusicaFallo(context)
+                }
+                else -> {
+                    MusicManager.stopMusicaExito()
+                    MusicManager.stopMusicaFallo()
+                }
+            }
+        }
+
+        LaunchedEffect(resultDialogState) {
+            when (val s = resultDialogState) {
+                is com.example.alphakids.ui.screens.tutor.game.components.GameResultState.Success -> {
+                    MusicManager.startMusicaExito(context)
+                }
+                is com.example.alphakids.ui.screens.tutor.game.components.GameResultState.Failure -> {
+                    MusicManager.startMusicaFallo(context)
+                }
+                else -> {
+                    MusicManager.stopMusicaExito()
+                    MusicManager.stopMusicaFallo()
+                }
+            }
+        }
+
+        resultDialogState?.let { state ->
+            com.example.alphakids.ui.screens.tutor.game.components.GameResultDialog(
+                state = state,
+                onDismiss = {
+                    MusicManager.stopMusicaExito()
+                    MusicManager.stopMusicaFallo()
+                    resultDialogState = null
+                },
+                onPrimaryAction = {
+                    MusicManager.stopMusicaExito()
+                    MusicManager.stopMusicaFallo()
+                    when (state) {
+                        is com.example.alphakids.ui.screens.tutor.game.components.GameResultState.Success -> {
+                            onWordCompleted(targetWord, targetImageUrl, studentId)
+                        }
+                        is com.example.alphakids.ui.screens.tutor.game.components.GameResultState.Failure -> {
+                            onTimeExpired(targetImageUrl, studentId)
+                        }
+                    }
+                },
+                onSecondaryAction = {
+                    MusicManager.stopMusicaExito()
+                    MusicManager.stopMusicaFallo()
+                    onBackClick()
+                }
+            )
         }
     }
 }

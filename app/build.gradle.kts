@@ -116,7 +116,6 @@ dependencies {
     implementation("androidx.core:core-ktx") // Ya incluido arriba
     implementation("com.google.firebase:firebase-storage")
 
-    // Coil para cargar imágenes (AsyncImage)
-    implementation("io.coil-kt:coil-compose:2.4.0")
+
 
 }
