@@ -22,6 +22,9 @@ import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.ListAlt
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Spellcheck
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.Spellcheck
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -61,9 +64,9 @@ fun WordsScreen(
     currentRoute: String = "words"
 ) {
     val teacherBottomNavItems = listOf(
-        BottomNavItem("home", "Inicio", Icons.Rounded.Home),
-        BottomNavItem("students", "Alumnos", Icons.Rounded.Groups),
-        BottomNavItem("words", "Palabras", Icons.Rounded.Spellcheck)
+        BottomNavItem("home", "Inicio", Icons.Rounded.Home, Icons.Outlined.Home),
+        BottomNavItem("students", "Alumnos", Icons.Rounded.Groups, Icons.Outlined.Groups),
+        BottomNavItem("words", "Palabras", Icons.Rounded.Spellcheck, Icons.Outlined.Spellcheck)
     )
 
     var searchQuery by remember { mutableStateOf("") }

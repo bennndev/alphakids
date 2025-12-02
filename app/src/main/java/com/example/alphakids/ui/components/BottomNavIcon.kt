@@ -1,6 +1,7 @@
 package com.example.alphakids.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,14 +27,15 @@ fun BottomNavIcon(
     modifier: Modifier = Modifier,
     icon: ImageVector,
     isSelected: Boolean,
+    label: String? = null,
     contentDescription: String? = null
 ) {
     val backgroundModifier = if (isSelected) {
         modifier
-            .height(24.dp)
-            .clip(RoundedCornerShape(28.dp))
-            .background(MaterialTheme.colorScheme.secondaryContainer)
-            .padding(horizontal = 10.dp)
+            .height(32.dp) // Increased height for pill
+            .clip(RoundedCornerShape(16.dp)) // Pill shape
+            .background(Color(0xFFCCE8E4)) // Light Green background
+            .padding(horizontal = 20.dp, vertical = 4.dp)
     } else {
         modifier
     }
@@ -44,8 +46,9 @@ fun BottomNavIcon(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = contentDescription,
-            modifier = Modifier.size(24.dp)
+            contentDescription = contentDescription ?: label,
+            modifier = Modifier.size(24.dp),
+            tint = if (isSelected) Color(0xFF006B5F) else Color(0xFF4A6360) // Dark Green vs Grey
         )
     }
 }

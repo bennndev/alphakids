@@ -22,6 +22,9 @@ import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.School
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Spellcheck
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.Spellcheck
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -62,9 +65,9 @@ fun TeacherStudentsScreen(
     teacherId: String = "teacher_id_placeholder" // En una app real, esto vendría de la sesión
 ) {
     val teacherBottomNavItems = listOf(
-        BottomNavItem("home", "Inicio", Icons.Rounded.Home),
-        BottomNavItem("students", "Alumnos", Icons.Rounded.Groups),
-        BottomNavItem("words", "Palabras", Icons.Rounded.Spellcheck)
+        BottomNavItem("home", "Inicio", Icons.Rounded.Home, Icons.Outlined.Home),
+        BottomNavItem("students", "Alumnos", Icons.Rounded.Groups, Icons.Outlined.Groups),
+        BottomNavItem("words", "Palabras", Icons.Rounded.Spellcheck, Icons.Outlined.Spellcheck)
     )
 
     // Observar el estado UI
@@ -220,8 +223,8 @@ fun TeacherStudentsScreen(
             if (rawStudents.isEmpty()) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
+                    .fillMaxWidth()
+                    .weight(1f),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -369,9 +372,9 @@ fun TeacherStudentsScreenPreview() {
             bottomBar = {
                 MainBottomBar(
                     items = listOf(
-                        BottomNavItem("home", "Inicio", Icons.Rounded.Home),
-                        BottomNavItem("students", "Alumnos", Icons.Rounded.Groups),
-                        BottomNavItem("words", "Palabras", Icons.Rounded.Spellcheck)
+                        BottomNavItem("home", "Inicio", Icons.Rounded.Home, Icons.Outlined.Home),
+                        BottomNavItem("students", "Alumnos", Icons.Rounded.Groups, Icons.Outlined.Groups),
+                        BottomNavItem("words", "Palabras", Icons.Rounded.Spellcheck, Icons.Outlined.Spellcheck)
                     ),
                     currentRoute = "students",
                     onNavigate = {}

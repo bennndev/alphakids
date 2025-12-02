@@ -11,6 +11,9 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Store
 import androidx.compose.material.icons.rounded.Pets
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Store
+import androidx.compose.material.icons.outlined.Pets
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material3.*
@@ -42,9 +45,9 @@ fun StudentAccessoriesStoreScreen(
     @androidx.annotation.DrawableRes pescadoImageResId: Int = android.R.drawable.ic_menu_help
 ) {
     val items = listOf(
-        BottomNavItem("home", "Inicio", Icons.Rounded.Home),
-        BottomNavItem("store", "Tienda", Icons.Rounded.Store),
-        BottomNavItem("pets", "Mascotas", Icons.Rounded.Pets)
+        BottomNavItem("home", "Inicio", Icons.Rounded.Home, Icons.Outlined.Home),
+        BottomNavItem("store", "Tienda", Icons.Rounded.Store, Icons.Outlined.Store),
+        BottomNavItem("pets", "Mascotas", Icons.Rounded.Pets, Icons.Outlined.Pets)
     )
 
     val studentViewModel: com.example.alphakids.ui.student.StudentViewModel = hiltViewModel()

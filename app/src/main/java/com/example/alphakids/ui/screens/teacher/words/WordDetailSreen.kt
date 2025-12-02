@@ -8,6 +8,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.Spellcheck
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,9 +45,9 @@ fun WordDetailScreen(
     currentRoute: String = "words"
 ) {
     val teacherBottomNavItems = listOf(
-        BottomNavItem("home", "Inicio", Icons.Rounded.Home),
-        BottomNavItem("students", "Alumnos", Icons.Rounded.Groups),
-        BottomNavItem("words", "Palabras", Icons.Rounded.Spellcheck)
+        BottomNavItem("home", "Inicio", Icons.Rounded.Home, Icons.Outlined.Home),
+        BottomNavItem("students", "Alumnos", Icons.Rounded.Groups, Icons.Outlined.Groups),
+        BottomNavItem("words", "Palabras", Icons.Rounded.Spellcheck, Icons.Outlined.Spellcheck)
     )
 
     val dateFormatter = remember {

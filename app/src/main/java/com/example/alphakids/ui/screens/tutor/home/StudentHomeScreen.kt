@@ -20,6 +20,9 @@ import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material.icons.rounded.Store
 import androidx.compose.material.icons.rounded.Pets
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Store
+import androidx.compose.material.icons.outlined.Pets
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,9 +56,9 @@ fun StudentHomeScreen(
     currentRoute: String = "home"
 ) {
     val studentItems = listOf(
-        BottomNavItem("home", "Inicio", Icons.Rounded.Home),
-        BottomNavItem("store", "Tienda", Icons.Rounded.Store),
-        BottomNavItem("pets", "Mascotas", Icons.Rounded.Pets)
+        BottomNavItem("home", "Inicio", Icons.Rounded.Home, Icons.Outlined.Home),
+        BottomNavItem("store", "Tienda", Icons.Rounded.Store, Icons.Outlined.Store),
+        BottomNavItem("pets", "Mascotas", Icons.Rounded.Pets, Icons.Outlined.Pets)
     )
 
     Scaffold(

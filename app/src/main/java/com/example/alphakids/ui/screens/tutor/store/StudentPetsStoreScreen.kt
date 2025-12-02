@@ -9,6 +9,9 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Store
 import androidx.compose.material.icons.rounded.Pets
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Store
+import androidx.compose.material.icons.outlined.Pets
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -43,9 +46,9 @@ fun StudentPetsStoreScreen(
     @androidx.annotation.DrawableRes catImageResId: Int
 ) {
     val items = listOf(
-        BottomNavItem("home", "Inicio", Icons.Rounded.Home),
-        BottomNavItem("store", "Tienda", Icons.Rounded.Store),
-        BottomNavItem("pets", "Mascotas", Icons.Rounded.Pets)
+        BottomNavItem("home", "Inicio", Icons.Rounded.Home, Icons.Outlined.Home),
+        BottomNavItem("store", "Tienda", Icons.Rounded.Store, Icons.Outlined.Store),
+        BottomNavItem("pets", "Mascotas", Icons.Rounded.Pets, Icons.Outlined.Pets)
     )
 
     // Obtener el nombre del estudiante guiándonos de ProfileSelectionScreen (StudentViewModel)
