@@ -185,7 +185,7 @@ fun AppNavHost(
             val studentId = entry.arguments?.getString("studentId") ?: "default"
 
             StudentHomeScreen(
-                studentName = "Estudiante",
+                studentId = studentId,
                 onLogoutClick = onSimulatedStudentLogout,
                 onBackClick = { navController.popBackStack() },
                 onPlayClick = {

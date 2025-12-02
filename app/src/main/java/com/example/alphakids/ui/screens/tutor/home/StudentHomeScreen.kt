@@ -29,6 +29,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -45,7 +47,7 @@ import com.example.alphakids.ui.theme.dmSansFamily
 
 @Composable
 fun StudentHomeScreen(
-    studentName: String,
+    studentId: String,
     onBackClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onPlayClick: () -> Unit,
@@ -60,6 +62,13 @@ fun StudentHomeScreen(
         BottomNavItem("store", "Tienda", Icons.Rounded.Store, Icons.Outlined.Store),
         BottomNavItem("pets", "Mascotas", Icons.Rounded.Pets, Icons.Outlined.Pets)
     )
+
+    // Obtener el nombre real del estudiante usando StudentViewModel
+    val studentViewModel: com.example.alphakids.ui.student.StudentViewModel =
+        androidx.hilt.navigation.compose.hiltViewModel()
+
+    val students by studentViewModel.students.collectAsState()
+    val studentName = students.firstOrNull { it.id == studentId }?.nombre ?: "Estudiante"
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -159,19 +168,3 @@ fun StudentHomeScreen(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun StudentHomeScreenPreview() {
-    AlphakidsTheme {
-        StudentHomeScreen(
-            studentName = "Sofía",
-            onBackClick = {},
-            onLogoutClick = {},
-            onPlayClick = {},
-            onDictionaryClick = {},
-            onAchievementsClick = {},
-            onSettingsClick = {},
-            onBottomNavClick = {}
-        )
-    }
-}
