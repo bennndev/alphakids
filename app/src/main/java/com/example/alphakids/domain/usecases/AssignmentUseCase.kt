@@ -15,14 +15,6 @@ class CreateAssignmentUseCase @Inject constructor(
     }
 }
 
-class GetStudentsForDocenteUseCase @Inject constructor(
-    private val repository: AssignmentRepository
-) {
-    operator fun invoke(docenteId: String): Flow<List<Estudiante>> {
-        return repository.getStudentsForDocente(docenteId)
-    }
-}
-
 class GetStudentsAssignedToWordUseCase @Inject constructor(
     private val repository: AssignmentRepository
 ) {

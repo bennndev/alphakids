@@ -47,4 +47,18 @@ class StudentRepositoryImpl @Inject constructor(
             emit(emptyList())
         }
     }
+
+    override fun getStudentsForDocente(docenteId: String): Flow<List<Estudiante>> {
+        Log.d("StudentRepo", "Fetching students for docente ID: $docenteId")
+
+        val query: Query = estudiantesCol.whereEqualTo("id_docente", docenteId)
+
+        return query.snapshots().map { querySnapshot ->
+            Log.d("StudentRepo", "Snapshot received. Docs: ${querySnapshot.size()}")
+            querySnapshot.toObjects(Estudiante::class.java)
+        }.catch { exception ->
+            Log.e("StudentRepo", "Error fetching students for docente $docenteId", exception)
+            emit(emptyList())
+        }
+    }
 }

@@ -11,6 +11,8 @@ import com.example.alphakids.domain.repository.AuthRepository
 import com.example.alphakids.domain.repository.ImageStorageRepository
 import com.example.alphakids.domain.repository.StudentRepository
 import com.example.alphakids.domain.repository.WordRepository
+import com.example.alphakids.domain.usecases.GetAssignmentsForStudentUseCase
+import com.example.alphakids.domain.usecases.GetStudentsForDocenteUseCase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -57,4 +59,14 @@ object RepositoryModule {
     fun provideImageStorageRepository(storage: FirebaseStorage): ImageStorageRepository {
         return ImageStorageRepositoryImpl(storage)
     }
+
+    @Provides
+    fun provideGetStudentsForDocenteUseCase(
+        repo: StudentRepository
+    ): GetStudentsForDocenteUseCase = GetStudentsForDocenteUseCase(repo)
+
+    @Provides
+    fun provideGetAssignmentsForStudentUseCase(
+        repo: AssignmentRepository
+    ): GetAssignmentsForStudentUseCase = GetAssignmentsForStudentUseCase(repo)
 }

@@ -57,6 +57,11 @@ fun TeacherHomeScreen(
 ) {
     // Obtener el nombre del profesor desde el ViewModel
     val teacherName by viewModel.teacherName.collectAsState()
+    val totalStudents by viewModel.totalStudents.collectAsState()
+    val totalWords by viewModel.totalWords.collectAsState()
+    val activeSections by viewModel.activeSections.collectAsState()
+    val activeInstitutions by viewModel.activeInstitutions.collectAsState()
+
     val teacherBottomNavItems = listOf(
         BottomNavItem("home", "Inicio", Icons.Rounded.Home, Icons.Outlined.Home),
         BottomNavItem("students", "Alumnos", Icons.Rounded.Groups, Icons.Outlined.Groups),
@@ -137,24 +142,24 @@ fun TeacherHomeScreen(
             )
 
             InfoCard(
-                title = "Info",
-                data = "Data",
-                icon = Icons.Rounded.Face
+                title = "Total Alumnos",
+                data = totalStudents.toString(),
+                icon = Icons.Rounded.Groups
             )
             InfoCard(
-                title = "info",
-                data = "Data",
-                icon = Icons.Rounded.Face
+                title = "Total Palabras",
+                data = totalWords.toString(),
+                icon = Icons.Rounded.Spellcheck
             )
             InfoCard(
-                title = "Info",
-                data = "Data",
-                icon = Icons.Rounded.Face
+                title = "Secciones Activas",
+                data = activeSections.toString(),
+                icon = Icons.Rounded.ListAlt
             )
             InfoCard(
-                title = "Info",
-                data = "Data",
-                icon = Icons.Rounded.Settings
+                title = "Instituciones",
+                data = activeInstitutions.toString(),
+                icon = Icons.Rounded.Home
             )
 
             Spacer(modifier = Modifier.height(1.dp))

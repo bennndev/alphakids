@@ -5,22 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.alphakids.data.firebase.models.Estudiante
 import com.example.alphakids.data.mappers.StudentMapper
-import com.example.alphakids.domain.models.Student
 import com.example.alphakids.domain.usecases.GetCurrentUserUseCase
 import com.example.alphakids.domain.usecases.GetStudentsForDocenteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 
 @HiltViewModel
@@ -29,91 +18,83 @@ class TeacherStudentsViewModel @Inject constructor(
     private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
 
-    // Estado UI
     private val _uiState = MutableStateFlow(TeacherStudentsUiState())
     val uiState: StateFlow<TeacherStudentsUiState> = _uiState.asStateFlow()
-    
-    // Filtros
-    private val _searchQuery = MutableStateFlow("")
-    private val _selectedFilter = MutableStateFlow<String?>(null)
 
-    // Estudiantes
+    // 🔍 Search
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
+
+    // 🎓 Filter
+    private val _selectedFilter = MutableStateFlow<String?>(null)
+    val selectedFilter = _selectedFilter.asStateFlow()
+
+    // 🔥 Load students
     @OptIn(ExperimentalCoroutinesApi::class)
     val students: StateFlow<List<Estudiante>> = getCurrentUserUseCase()
         .map { it?.uid }
         .flatMapLatest { docenteId ->
-            if (docenteId != null) {
-                Log.d("TeacherStudentsVM", "Cargando estudiantes para docente: $docenteId")
-                getStudentsForDocenteUseCase(docenteId)
-            } else {
-                Log.d("TeacherStudentsVM", "No hay docente autenticado")
-                flowOf(emptyList())
-            }
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+            docenteId?.let { getStudentsForDocenteUseCase(it) } ?: flowOf(emptyList())
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Estudiantes convertidos a dominio
-    private val domainStudents = students.map { estudiantes ->
-        estudiantes.map { StudentMapper.toDomain(it) }
+    // Map to domain Student
+    private val domainStudents = students.map { list ->
+        list.map { StudentMapper.toDomain(it) }
     }
 
-    // Estudiantes filtrados
+    // 🎯 Filtering Logic
     val filteredStudents = combine(
         domainStudents,
         _searchQuery,
         _selectedFilter
     ) { students, query, filter ->
+
         var result = students
-        
-        // Aplicar filtro de búsqueda
-        if (query.isNotEmpty()) {
-            result = result.filter { student ->
-                val fullName = "${student.nombre} ${student.apellido}"
-                fullName.contains(query, ignoreCase = true)
+
+        // 🔍 Search by full name
+        if (query.isNotBlank()) {
+            result = result.filter {
+                "${it.nombre} ${it.apellido}".contains(query, ignoreCase = true)
             }
         }
-        
-        // Aplicar filtro de categoría
+
+        // 🎓 Filter by Grade
         if (filter != null) {
             result = result.filter { it.grado == filter }
         }
-        
+
         result
     }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        emptyList()
     )
 
-    // Métricas para las tarjetas de información
+    // 🧮 Metrics (Tarjetas)
     val metrics = domainStudents.map { students ->
-        val totalStudents = students.size
-        val activeStudents = students.size // Asumimos que todos están activos por ahora
-        val gradeCounts = students.groupBy { it.grado }
-        val sectionCounts = students.groupBy { it.seccion }
-        
         TeacherStudentsMetrics(
-            totalStudents = totalStudents,
-            activeStudents = activeStudents,
-            gradeDistribution = gradeCounts.mapValues { it.value.size },
-            sectionDistribution = sectionCounts.mapValues { it.value.size }
+            totalStudents = students.size,
+            totalGrades = students.map { it.grado }.distinct().count { it.isNotBlank() },
+            totalSections = students.map { it.seccion }.distinct().count { it.isNotBlank() },
+            totalInstitutions = students.map { it.idInstitucion }.distinct().count { it.isNotBlank() }
         )
     }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = TeacherStudentsMetrics()
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        TeacherStudentsMetrics()
     )
 
-    // Filtros disponibles
+    // 🎓 Available grade filters: 3 años, 4 años, 5 años + Firestore
     val availableFilters = domainStudents.map { students ->
-        students.map { it.grado }.distinct().sorted()
+        val firestoreGrades = students.map { it.grado }.distinct().sorted()
+
+        listOf("3 años", "4 años", "5 años") +
+                firestoreGrades.filterNot { it in listOf("3 años", "4 años", "5 años") }
     }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        emptyList()
     )
 
     fun updateSearchQuery(query: String) {
@@ -137,7 +118,7 @@ data class TeacherStudentsUiState(
 
 data class TeacherStudentsMetrics(
     val totalStudents: Int = 0,
-    val activeStudents: Int = 0,
-    val gradeDistribution: Map<String, Int> = emptyMap(),
-    val sectionDistribution: Map<String, Int> = emptyMap()
+    val totalGrades: Int = 0,
+    val totalSections: Int = 0,
+    val totalInstitutions: Int = 0
 )

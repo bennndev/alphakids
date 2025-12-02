@@ -10,12 +10,12 @@ import com.example.alphakids.domain.repository.WordSortOrder
 import com.example.alphakids.domain.usecases.CreateAssignmentUseCase
 import com.example.alphakids.domain.usecases.GetCurrentUserUseCase
 import com.example.alphakids.domain.usecases.GetFilteredWordsUseCase
-import com.example.alphakids.domain.usecases.GetStudentsForDocenteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.example.alphakids.domain.usecases.GetStudentsForDocenteUseCase
 
 sealed interface AssignmentUiState {
     object Idle : AssignmentUiState

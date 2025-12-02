@@ -18,4 +18,6 @@ interface AssignmentRepository {
         difficulty: String? = null,
         query: String? = null
     ): Flow<List<WordAssignment>>
+
+    fun getAssignmentsForStudent(studentId: String): Flow<List<WordAssignment>>
 }

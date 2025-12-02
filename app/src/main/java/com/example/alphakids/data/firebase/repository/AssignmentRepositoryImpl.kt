@@ -130,4 +130,19 @@ class AssignmentRepositoryImpl @Inject constructor(
             Log.e("AssignmentRepo", "Error fetching assignments for student $studentId", exception)
             emit(emptyList())
         }
+
+    override fun getAssignmentsForStudent(studentId: String): Flow<List<WordAssignment>> {
+        return asignacionesCol
+            .whereEqualTo("id_estudiante", studentId)
+            .snapshots()
+            .map { snapshot ->
+                snapshot
+                    .toObjects(AsignacionPalabra::class.java)
+                    .map { dto -> WordAssignmentMapper.toDomain(dto) }
+            }
+            .catch { e ->
+                Log.e("AssignmentRepo", "Error fetching assignments for student $studentId", e)
+                emit(emptyList())
+            }
+    }
 }

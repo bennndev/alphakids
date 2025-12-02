@@ -138,7 +138,7 @@ fun WordsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // TODO: Conectar estos InfoCards a datos reales
+
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 InfoCard(
                     modifier = Modifier.weight(1f),
@@ -155,15 +155,16 @@ fun WordsScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 InfoCard(
                     modifier = Modifier.weight(1f),
-                    title = "Info",
-                    data = "Data"
+                    title = "Fácil",
+                    data = words.count { it.nivelDificultad == "Fácil" }.toString()
                 )
                 InfoCard(
                     modifier = Modifier.weight(1f),
-                    title = "Info",
-                    data = "Data"
+                    title = "Difícil",
+                    data = words.count { it.nivelDificultad == "Difícil" }.toString()
                 )
             }
+
 
             Spacer(modifier = Modifier.height(24.dp))
 
