@@ -119,7 +119,7 @@ fun StudentHomeScreen(
             Spacer(modifier = Modifier.height(5.dp))
 
             Text(
-                text = "¿Qué quieres hacer hoy?",
+                text = "¿Qué quieres jugar hoy?",
                 fontFamily = dmSansFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 14.sp,

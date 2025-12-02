@@ -15,7 +15,10 @@ interface AuthRepository {
         email: String,
         clave: String,
         telefono: String,
-        rol: String
+        rol: String,
+        idInstitucion: String = "",
+        grado: String = "",
+        seccion: String = ""
     ): AuthResult
 
     fun login(email: String, clave: String): AuthResult

@@ -1,7 +1,9 @@
 package com.example.alphakids.ui.auth
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -14,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -23,13 +26,11 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.alphakids.ui.components.AppHeader
 import com.example.alphakids.ui.components.IconContainer
+import com.example.alphakids.ui.components.LabeledDropdownField
 import com.example.alphakids.ui.components.LabeledTextField
 import com.example.alphakids.ui.components.PrimaryButton
 import com.example.alphakids.ui.theme.dmSansFamily
 import kotlinx.coroutines.flow.collectLatest
-import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.foundation.shape.RoundedCornerShape
 
 @Composable
 fun RegisterScreen(
@@ -154,7 +155,7 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- Campo de Contraseña con Toggle de Visibilidad (Soluciona errores de LabeledTextField) ---
+                // --- Campo de Contraseña con Toggle de Visibilidad ---
                 PasswordInputField(
                     label = "Contraseña",
                     value = password,
@@ -184,6 +185,111 @@ fun RegisterScreen(
                     onValueChange = { telefono = it },
                     placeholderText = "Escribe tu teléfono"
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                if (!isTutorRegister) {
+                    val institutions by viewModel.institutions.collectAsState()
+                    val grades by viewModel.grades.collectAsState()
+                    val sections by viewModel.sections.collectAsState()
+                    val selectedInstitution by viewModel.selectedInstitution.collectAsState()
+                    val selectedGrade by viewModel.selectedGrade.collectAsState()
+                    val selectedSection by viewModel.selectedSection.collectAsState()
+
+                    var institutionExpanded by remember { mutableStateOf(false) }
+                    var gradeExpanded by remember { mutableStateOf(false) }
+                    var sectionExpanded by remember { mutableStateOf(false) }
+
+                    // Institution Dropdown
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        LabeledDropdownField(
+                            label = "Institución",
+                            selectedOption = selectedInstitution?.nombre ?: "",
+                            placeholderText = "Selecciona institución (Opcional)",
+                            onClick = { institutionExpanded = true }
+                        )
+                        DropdownMenu(
+                            expanded = institutionExpanded,
+                            onDismissRequest = { institutionExpanded = false }
+                        ) {
+                            institutions.forEach { institution ->
+                                DropdownMenuItem(
+                                    text = { Text(text = institution.nombre) },
+                                    onClick = {
+                                        viewModel.selectInstitution(institution)
+                                        institutionExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Grade Dropdown
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        LabeledDropdownField(
+                            label = "Grado",
+                            selectedOption = selectedGrade?.name ?: "",
+                            placeholderText = "Selecciona grado (Opcional)",
+                            onClick = { 
+                                if (selectedInstitution != null) {
+                                    gradeExpanded = true 
+                                } else {
+                                    Toast.makeText(context, "Primero selecciona una institución", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        )
+                        DropdownMenu(
+                            expanded = gradeExpanded,
+                            onDismissRequest = { gradeExpanded = false }
+                        ) {
+                            grades.forEach { grade ->
+                                DropdownMenuItem(
+                                    text = { Text(text = grade.name) },
+                                    onClick = {
+                                        viewModel.selectGrade(grade)
+                                        gradeExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Section Dropdown
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        LabeledDropdownField(
+                            label = "Sección",
+                            selectedOption = selectedSection?.code ?: "",
+                            placeholderText = "Selecciona sección (Opcional)",
+                            onClick = { 
+                                if (selectedGrade != null) {
+                                    sectionExpanded = true 
+                                } else {
+                                    Toast.makeText(context, "Primero selecciona un grado", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        )
+                        DropdownMenu(
+                            expanded = sectionExpanded,
+                            onDismissRequest = { sectionExpanded = false }
+                        ) {
+                            sections.forEach { section ->
+                                DropdownMenuItem(
+                                    text = { Text(text = section.code) },
+                                    onClick = {
+                                        viewModel.selectSection(section)
+                                        sectionExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
@@ -218,7 +324,10 @@ fun RegisterScreen(
                             email = email,
                             clave = password,
                             telefono = telefono,
-                            rol = rol
+                            rol = rol,
+                            idInstitucion = if (!isTutorRegister) viewModel.selectedInstitution.value?.id ?: "" else "",
+                            grado = if (!isTutorRegister) viewModel.selectedGrade.value?.name ?: "" else "",
+                            seccion = if (!isTutorRegister) viewModel.selectedSection.value?.code ?: "" else ""
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),

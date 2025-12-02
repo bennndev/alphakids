@@ -83,7 +83,10 @@ class AuthRepositoryImpl @Inject constructor(
         email: String,
         clave: String,
         telefono: String,
-        rol: String
+        rol: String,
+        idInstitucion: String,
+        grado: String,
+        seccion: String
     ): AuthResult = flow {
         try {
             val authResult = auth.createUserWithEmailAndPassword(email, clave).await()
@@ -106,7 +109,12 @@ class AuthRepositoryImpl @Inject constructor(
             batch.set(usuariosCol.document(uid), usuario)
 
             if (rol == "docente") {
-                val docente = Docente(uid = uid)
+                val docente = Docente(
+                    uid = uid,
+                    idInstitucion = idInstitucion,
+                    grado = grado,
+                    seccion = seccion
+                )
                 batch.set(docentesCol.document(uid), docente)
             } else if (rol == "tutor") {
                 val tutor = Tutor(uid = uid)
